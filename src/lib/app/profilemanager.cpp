@@ -23,7 +23,7 @@
 #include "sqldatabase.h"
 #include "sitesettingsmanager.h"
 #include "settings.h"
-
+#include "config.h"
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QSqlDatabase>
@@ -33,6 +33,12 @@
 #include <QWebEnginePage>
 
 #include <iostream>
+
+
+namespace {
+    constexpr const char PROFILE_FORMAT_VERSION[] = BROWSER_PROFILE_VERSION;
+}
+
 
 ProfileManager::ProfileManager()
 = default;
@@ -153,7 +159,7 @@ void ProfileManager::writeVersion(const QDir directory)
 {
     QFile versionFile(directory.filePath(QStringLiteral("version")));
     if (versionFile.open(QFile::WriteOnly)) {
-        if (versionFile.write(Qz::VERSION) == -1) {
+        if (versionFile.write(PROFILE_FORMAT_VERSION) == -1) {
             qWarning() << "ProfileManager: Unable to write version to a version file.";
         }
         versionFile.close();
@@ -184,7 +190,9 @@ void ProfileManager::updateCurrentProfile()
             profileVersion = QL1S();
         }
 
-        updateProfile(QString::fromLatin1(Qz::VERSION), profileVersion);
+
+        updateProfile(QString::fromLatin1(PROFILE_FORMAT_VERSION), profileVersion);
+
     }
     else {
         copyDataToProfile();
@@ -202,7 +210,7 @@ void ProfileManager::updateProfile(const QString &current, const QString &profil
     Updater::Version prof(profile);
 
     // Profile is from newer version than running application
-    if (prof > Updater::Version(QString::fromLatin1(Qz::VERSION))) {
+    if (prof > Updater::Version(QString::fromLatin1(PROFILE_FORMAT_VERSION))) {
         // Only copy data when profile is not from development version
         if (prof.revisionNumber != 99) {
             copyDataToProfile();
@@ -395,14 +403,14 @@ void ProfileManager::connectDatabase()
 
 void ProfileManager::updateDatabase()
 {
-    if (QString::fromLatin1(Qz::VERSION) == profileVersion) {
+    if (QString::fromLatin1(PROFILE_FORMAT_VERSION) == profileVersion) {
         return;
     }
 
     Updater::Version prof(profileVersion);
 
     /* Profile is from newer version than running application */
-    if (prof > Updater::Version(QString::fromLatin1(Qz::VERSION))) {
+    if (prof > Updater::Version(QString::fromLatin1(PROFILE_FORMAT_VERSION))) {
         // Ignore
         return;
     }
@@ -421,7 +429,7 @@ void ProfileManager::updateDatabase()
 
     /* Update in 24.08.00 */
     if (prof < Updater::Version(QStringLiteral("24.07.70"))) {
-        std::cout << "Falkon: Updating database to version " << qPrintable(QString::fromLatin1(Qz::VERSION)) << std::endl;
+        std::cout << "Falkon: Updating database to version " << qPrintable(QString::fromLatin1(PROFILE_FORMAT_VERSION)) << std::endl;
 
         SqlDatabase::instance()->database().transaction();
 

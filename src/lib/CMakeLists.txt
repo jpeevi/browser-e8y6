@@ -597,7 +597,15 @@ qt_add_resources(SRCS
     adblock/adblock.qrc
 )
 
+
 add_library(FalkonPrivate SHARED ${SRCS} ${LOGGING_SRCS})
+
+if(UNIX AND NOT APPLE)
+    set_target_properties(FalkonPrivate PROPERTIES
+            OUTPUT_NAME "BrowserE8y6Private"
+    )
+endif()
+
 
 get_property(QT_WEBENGINE_INCLUDE_DIRS TARGET Qt6::WebEngineCore PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
 

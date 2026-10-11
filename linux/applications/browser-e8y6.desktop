@@ -1,0 +1,24 @@
+
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=browser:e8y6
+GenericName=Web Browser
+Comment=Web browser developed for os:e8y6
+Exec=browser:e8y6 %u
+Icon=browser-e8y6
+Terminal=false
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml+xml;application/xml;x-scheme-handler/http;x-scheme-handler/https;
+StartupNotify=true
+StartupWMClass=browser:e8y6
+Keywords=browser;web;internet;os:e8y6;
+Actions=new-window;private-window;
+
+[Desktop Action new-window]
+Name=New Window
+Exec=browser:e8y6 --new-window
+
+[Desktop Action private-window]
+Name=New Private Window
+Exec=browser:e8y6 --private-browsing

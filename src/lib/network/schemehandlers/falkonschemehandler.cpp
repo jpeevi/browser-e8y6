@@ -279,10 +279,12 @@ QString FalkonSchemeReply::aboutPage() {
                                                            QString::fromLatin1(Qz::VERSION),
                                                            QL1S(FALKON_GIT_REVISION))));
 #else
-                                                       QString::fromLatin1(Qz::VERSION)));
+        QString::fromLatin1(Qz::VERSION)));
 #endif
 
+
         aPage.replace(QLatin1String("%MAIN-DEVELOPER%"), tr("Main developer"));
+
 
         QString developers = QSL("");
         for (const auto &author: Qz::AUTHORS) {

@@ -1,0 +1,31 @@
+Source: browser-e8y6
+Section: web
+Priority: optional
+Maintainer: jpeevi <jpeevi@hotmail.com>
+Build-Depends:
+ debhelper-compat (= 13),
+ cmake,
+ ninja-build,
+ extra-cmake-modules,
+ qt6-base-dev,
+ qt6-declarative-dev,
+ qt6-webengine-dev,
+ qt6-webchannel-dev,
+ libkf6archive-dev,
+ libssl-dev,
+ libxcb1-dev,
+ libxcb-util-dev,
+ pkg-config
+Standards-Version: 4.6.2
+Homepage: https://github.com/jpeevi/browser-e8y6
+Rules-Requires-Root: no
+
+Package: browser-e8y6
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Web browser developed for os:e8y6
+ browser:e8y6 is a Qt 6 and Qt WebEngine-based web browser
+ developed for the os:e8y6 operating system.
+ .
+ It uses system-provided Qt WebEngine libraries and receives
+ browser engine updates through operating system packages.

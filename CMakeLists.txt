@@ -1,14 +1,21 @@
 # CMake version required. This must be the very first line, because it sets default policies affecting everything else
 cmake_minimum_required(VERSION 3.18)
 
-# KDE Gear Version, managed by release script
-set(RELEASE_SERVICE_VERSION_MAJOR "26")
-set(RELEASE_SERVICE_VERSION_MINOR "11")
-set(RELEASE_SERVICE_VERSION_MICRO "71")
+
+# browser:e8y6 version
+set(RELEASE_SERVICE_VERSION_MAJOR "0")
+set(RELEASE_SERVICE_VERSION_MINOR "1")
+set(RELEASE_SERVICE_VERSION_MICRO "0")
 set(RELEASE_SERVICE_VERSION "${RELEASE_SERVICE_VERSION_MAJOR}.${RELEASE_SERVICE_VERSION_MINOR}.${RELEASE_SERVICE_VERSION_MICRO}")
 
-# Project name and version
+# Keep the internal CMake project name for Falkon compatibility.
 project(Falkon VERSION ${RELEASE_SERVICE_VERSION})
+
+
+# Profile compatibility version.
+# Change only when profile migrations or storage formats change.
+set(BROWSER_PROFILE_VERSION "26.11.71")
+
 
 set(KF_MAJOR_VERSION "6")
 set(QT_MIN_VERSION "6.4.0")
@@ -36,19 +43,26 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
+
+# Keep the internal CMake variable name for Falkon compatibility.
+# Install browser:e8y6 plugins in an independent directory.
 if (UNIX AND NOT APPLE)
-    set(FALKON_INSTALL_PLUGINDIR "${KDE_INSTALL_PLUGINDIR}/falkon")
-else()
+    set(FALKON_INSTALL_PLUGINDIR "${KDE_INSTALL_PLUGINDIR}/browser-e8y6")
+else ()
     set(FALKON_INSTALL_PLUGINDIR "${KDE_INSTALL_PLUGINDIR}")
-endif()
+endif ()
+
 if (IS_ABSOLUTE ${FALKON_INSTALL_PLUGINDIR})
     set(PLUGIN_PATH "${FALKON_INSTALL_PLUGINDIR}")
-else()
+else ()
     set(PLUGIN_PATH "${CMAKE_INSTALL_PREFIX}/${FALKON_INSTALL_PLUGINDIR}")
-endif()
+endif ()
+
 if (NOT WIN32)
-    set(FALKON_PLUGIN_PATH "${PLUGIN_PATH}" CACHE PATH "Default plugin search path")
-endif()
+    set(FALKON_PLUGIN_PATH "${PLUGIN_PATH}" CACHE PATH
+            "Default plugin search path" FORCE)
+endif ()
+
 
 # Defines that are always set
 add_definitions(-DQT_NO_URL_CAST_FROM_STRING -DQT_USE_QSTRINGBUILDER -DQT_NO_CAST_TO_ASCII)
@@ -56,23 +70,23 @@ add_definitions(-DQT_NO_CONTEXTLESS_CONNECT)
 
 # Mandatory: Qt6
 find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Core Widgets Network Sql QuickWidgets PrintSupport WebChannel)
-if(Qt6Network_VERSION VERSION_GREATER_EQUAL "6.9.0")
+if (Qt6Network_VERSION VERSION_GREATER_EQUAL "6.9.0")
     find_package(Qt6 ${REQUIRED_QT_VERSION} CONFIG REQUIRED NetworkPrivate)
-endif()
+endif ()
 
 find_package(Qt6WebEngineCore ${QT_MIN_VERSION} REQUIRED)
 find_package(Qt6WebEngineWidgets ${QT_MIN_VERSION} REQUIRED)
 if (BUILD_TESTING)
     find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Test)
-endif()
+endif ()
 if (NOT DISABLE_DBUS)
     find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS DBus)
-endif()
+endif ()
 
 if (UNIX AND NOT APPLE AND NOT NO_X11)
     add_definitions(-DQZ_WS_X11)
     find_package(XCB REQUIRED COMPONENTS XCB UTIL)
-endif()
+endif ()
 if (WIN32)
     add_definitions(-DW7API)
 
@@ -92,12 +106,12 @@ if (WIN32)
             # Prepend each digit with a zero.
             string(REGEX REPLACE "([0-9A-Z])" "0\\1" ver ${ver})
             set(${version} "0x${ver}")
-        endif(CMAKE_SYSTEM_VERSION)
+        endif (CMAKE_SYSTEM_VERSION)
     endmacro(get_WIN32_WINNT)
 
     get_WIN32_WINNT(ver)
     add_definitions(-D_WIN32_WINNT=${ver})
-endif()
+endif ()
 
 # Mandatory: OpenSSL
 find_package(OpenSSL REQUIRED)
@@ -108,16 +122,16 @@ find_package(KF6 REQUIRED COMPONENTS Archive)
 # KF5I18n: Mandatory with downloaded translations (only for ki18n_install)
 if (EXISTS "${CMAKE_SOURCE_DIR}/po")
     find_package(KF6I18n REQUIRED)
-endif()
+endif ()
 
 # Optional: GnomeKeyring
 find_package(PkgConfig)
 if (PKG_CONFIG_FOUND)
     option(BUILD_KEYRING "Gnome keyring password plugin" ON)
     if (BUILD_KEYRING)
-        pkg_check_modules(GNOME_KEYRING IMPORTED_TARGET gnome-keyring-1 )
-    endif()
-endif()
+        pkg_check_modules(GNOME_KEYRING IMPORTED_TARGET gnome-keyring-1)
+    endif ()
+endif ()
 
 # Optional: KWallet, KIO, KCrash, KCoreAddons
 find_package(KF6Wallet ${KF_MIN_VERSION} CONFIG)
@@ -134,7 +148,7 @@ find_package(KF6JobWidgets ${KF_MIN_VERSION} CONFIG)
 set_package_properties(KF6JobWidgets PROPERTIES DESCRIPTION "KDE Frameworks Integration plugin" TYPE OPTIONAL)
 if (KF6Wallet_FOUND AND KF6KIO_FOUND AND KF6Crash_FOUND AND KF6CoreAddons_FOUND AND KF6Purpose_FOUND AND KF6JobWidgets_FOUND AND NOT WIN32)
     set(ENABLE_KDE_FRAMEWORKS_INTEGRATION_PLUGIN TRUE)
-endif()
+endif ()
 
 # Optional: PySide6
 option(BUILD_PYTHON_SUPPORT "Support for Python plugins" ON)
@@ -149,56 +163,57 @@ if (BUILD_PYTHON_SUPPORT)
     set_package_properties(Shiboken6Tools PROPERTIES DESCRIPTION "Python plugins" TYPE OPTIONAL)
     if (PySide6_FOUND AND Shiboken6_FOUND AND Shiboken6Tools_FOUND AND Python3_FOUND)
         set(ENABLE_PYTHON_PLUGINS TRUE)
-    endif()
-endif()
+    endif ()
+endif ()
 
 find_package(Intl)
 if (Intl_FOUND)
     set(HAVE_LIBINTL TRUE)
-endif()
+endif ()
 
 # Git revision
 if (EXISTS "${CMAKE_SOURCE_DIR}/.git")
-  find_package(Git QUIET)
-  if(GIT_FOUND)
-    execute_process(
-      COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-      OUTPUT_VARIABLE GIT_REVISION
-    )
-    string(REGEX REPLACE "\n" "" GIT_REVISION "${GIT_REVISION}")
-    set(FALKON_GIT_REVISION "${GIT_REVISION}")
-  else()
-    message(STATUS "Git revision could not be determined")
-  endif()
-endif()
+    find_package(Git QUIET)
+    if (GIT_FOUND)
+        execute_process(
+                COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                OUTPUT_VARIABLE GIT_REVISION
+        )
+        string(REGEX REPLACE "\n" "" GIT_REVISION "${GIT_REVISION}")
+        set(FALKON_GIT_REVISION "${GIT_REVISION}")
+    else ()
+        message(STATUS "Git revision could not be determined")
+    endif ()
+endif ()
 
 configure_file(config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/src/config.h)
 
 # Include dirs used everywhere
 include_directories(
-     ${CMAKE_SOURCE_DIR}/src/lib/3rdparty
-     ${CMAKE_SOURCE_DIR}/src/lib/adblock
-     ${CMAKE_SOURCE_DIR}/src/lib/app
-     ${CMAKE_SOURCE_DIR}/src/lib/autofill
-     ${CMAKE_SOURCE_DIR}/src/lib/bookmarks
-     ${CMAKE_SOURCE_DIR}/src/lib/cookies
-     ${CMAKE_SOURCE_DIR}/src/lib/downloads
-     ${CMAKE_SOURCE_DIR}/src/lib/history
-     ${CMAKE_SOURCE_DIR}/src/lib/navigation
-     ${CMAKE_SOURCE_DIR}/src/lib/network
-     ${CMAKE_SOURCE_DIR}/src/lib/notifications
-     ${CMAKE_SOURCE_DIR}/src/lib/opensearch
-     ${CMAKE_SOURCE_DIR}/src/lib/other
-     ${CMAKE_SOURCE_DIR}/src/lib/plugins
-     ${CMAKE_SOURCE_DIR}/src/lib/popupwindow
-     ${CMAKE_SOURCE_DIR}/src/lib/preferences
-     ${CMAKE_SOURCE_DIR}/src/lib/session
-     ${CMAKE_SOURCE_DIR}/src/lib/sidebar
-     ${CMAKE_SOURCE_DIR}/src/lib/tabwidget
-     ${CMAKE_SOURCE_DIR}/src/lib/tools
-     ${CMAKE_SOURCE_DIR}/src/lib/webengine
-     ${CMAKE_SOURCE_DIR}/src/lib/webtab
+        ${CMAKE_CURRENT_BINARY_DIR}/src
+        ${CMAKE_SOURCE_DIR}/src/lib/3rdparty
+        ${CMAKE_SOURCE_DIR}/src/lib/adblock
+        ${CMAKE_SOURCE_DIR}/src/lib/app
+        ${CMAKE_SOURCE_DIR}/src/lib/autofill
+        ${CMAKE_SOURCE_DIR}/src/lib/bookmarks
+        ${CMAKE_SOURCE_DIR}/src/lib/cookies
+        ${CMAKE_SOURCE_DIR}/src/lib/downloads
+        ${CMAKE_SOURCE_DIR}/src/lib/history
+        ${CMAKE_SOURCE_DIR}/src/lib/navigation
+        ${CMAKE_SOURCE_DIR}/src/lib/network
+        ${CMAKE_SOURCE_DIR}/src/lib/notifications
+        ${CMAKE_SOURCE_DIR}/src/lib/opensearch
+        ${CMAKE_SOURCE_DIR}/src/lib/other
+        ${CMAKE_SOURCE_DIR}/src/lib/plugins
+        ${CMAKE_SOURCE_DIR}/src/lib/popupwindow
+        ${CMAKE_SOURCE_DIR}/src/lib/preferences
+        ${CMAKE_SOURCE_DIR}/src/lib/session
+        ${CMAKE_SOURCE_DIR}/src/lib/sidebar
+        ${CMAKE_SOURCE_DIR}/src/lib/tabwidget
+        ${CMAKE_SOURCE_DIR}/src/lib/tools
+        ${CMAKE_SOURCE_DIR}/src/lib/webengine
+        ${CMAKE_SOURCE_DIR}/src/lib/webtab
 )
 
 # Finally, go into the subdirs
@@ -208,7 +223,7 @@ option(BUILD_TESTING_ONLINE "Run tests requiring online connection" OFF)
 if (BUILD_TESTING)
     add_subdirectory(autotests)
     add_subdirectory(tests/benchmarks)
-endif()
+endif ()
 
 # Tell releaseme that po is already taken care of
 # SKIP_PO_INSTALL
@@ -217,11 +232,11 @@ feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 
 # browser:e8y6 application icons
 
-foreach(ICON_SIZE 16 24 32 48 64 128 256 512)
+foreach (ICON_SIZE 16 24 32 48 64 128 256 512)
     install(
-        FILES
+            FILES
             "${CMAKE_CURRENT_SOURCE_DIR}/branding/hicolor/${ICON_SIZE}x${ICON_SIZE}/apps/browser-e8y6.png"
-        DESTINATION
-            "share/icons/hicolor/${ICON_SIZE}x${ICON_SIZE}/apps"
+            DESTINATION
+            "${KDE_INSTALL_ICONDIR}/hicolor/${ICON_SIZE}x${ICON_SIZE}/apps"
     )
-endforeach()
+endforeach ()

@@ -29,7 +29,7 @@ QmlI18n::QmlI18n(const QString &pluginName, QObject *parent)
 void QmlI18n::initTranslations()
 {
     m_domain = QString(QSL("falkon_%1")).arg(m_pluginName);
-    const QString localeDir = QStandardPaths::locate(QStandardPaths::GenericDataLocation, QSL("locale"), QStandardPaths::LocateDirectory);
+    const QString localeDir = QStandardPaths::locate(QStandardPaths::GenericDataLocation, QSL("browser-e8y6/locale"), QStandardPaths::LocateDirectory);
     const bool isLanguageSet = qEnvironmentVariableIsSet("LANGUAGE");
     const QByteArray language = qgetenv("LANGUAGE");
     qputenv("LANGUAGE", QLocale::system().name().toUtf8());

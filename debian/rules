@@ -1,0 +1,17 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+%:
+	dh $@ --buildsystem=cmake+ninja --builddirectory=build-debian
+
+override_dh_auto_configure:
+	dh_auto_configure --buildsystem=cmake+ninja --builddirectory=build-debian -- \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DBUILD_TESTING=OFF \
+		-DBUILD_PYTHON_SUPPORT=OFF \
+		-DBUILD_KEYRING=OFF
+
+override_dh_auto_test:
+	@echo "Skipping tests (BUILD_TESTING=OFF)"

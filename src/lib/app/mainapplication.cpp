@@ -141,12 +141,16 @@ MainApplication::MainApplication(int &argc, char **argv)
     const QString iconPath = QDir(applicationDirPath()).absoluteFilePath(
         QSL("../share/icons/hicolor/256x256/apps/browser-e8y6.png"));
     setWindowIcon(QIcon::fromTheme(QSL("browser-e8y6"), QIcon(iconPath)));
-    setDesktopFileName(QSL("org.kde.falkon"));
+    setDesktopFileName(QSL("browser-e8y6"));
 
 #ifdef GIT_REVISION
+
     setApplicationVersion(QSL("%1 (%2)").arg(QString::fromLatin1(Qz::VERSION), GIT_REVISION));
+
 #else
+
     setApplicationVersion(QString::fromLatin1(Qz::VERSION));
+
 #endif
 
     // Set fallback icon theme (eg. on Windows/Mac)
@@ -1140,23 +1144,22 @@ void MainApplication::loadSettings() {
 void MainApplication::loadTheme(const QString &name) {
     QString activeThemePath = DataPaths::locate(DataPaths::Themes, name);
 
-    // browser:e8y6 - locate themes installed in the original
-    // Falkon data directory when standard discovery fails.
+    // browser:e8y6 - locate themes in the browser's own installation
+    // when standard theme discovery fails.
     if (activeThemePath.isEmpty()) {
         const QDir executableDir(
             QCoreApplication::applicationDirPath()
         );
 
+
         const QStringList fallbackPaths = {
-            executableDir.absoluteFilePath(
-                QSL("../share/falkon/themes/") + name
-            ),
             executableDir.absoluteFilePath(
                 QSL("../share/browser-e8y6/themes/") + name
             ),
-            QSL("/usr/share/falkon/themes/") + name,
-            QSL("/usr/local/share/falkon/themes/") + name
+            QSL("/usr/share/browser-e8y6/themes/") + name,
+            QSL("/usr/local/share/browser-e8y6/themes/") + name
         };
+
 
         for (const QString &candidate: fallbackPaths) {
             if (QFileInfo(
@@ -1178,17 +1181,18 @@ void MainApplication::loadTheme(const QString &name) {
         );
     }
 
-    // Resolve the default theme from the installed Falkon directory too.
+
+    // Resolve the default theme from browser:e8y6's own installation.
     if (activeThemePath.isEmpty()) {
         const QDir executableDir(
             QCoreApplication::applicationDirPath()
         );
 
         const QString defaultThemePath =
-                executableDir.absoluteFilePath(
-                    QSL("../share/falkon/themes/") +
-                    DEFAULT_THEME_NAME
-                );
+            executableDir.absoluteFilePath(
+                QSL("../share/browser-e8y6/themes/") +
+                DEFAULT_THEME_NAME
+            );
 
         if (QFileInfo(
             QDir(defaultThemePath).filePath(QSL("main.css"))
@@ -1196,6 +1200,7 @@ void MainApplication::loadTheme(const QString &name) {
             activeThemePath = defaultThemePath;
         }
     }
+
 
     if (activeThemePath.isEmpty()) {
         qWarning() << "Cannot find a usable browser theme";
