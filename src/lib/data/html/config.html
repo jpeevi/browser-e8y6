@@ -1,121 +1,304 @@
-<html><head>
-<meta http-equiv="content-type" content="text/html; charset=utf-8">
-<title>%TITLE%</title>
-<style>
-html {font-family: sans-serif;}
-html * {font-size: 100%;line-height: 1.6;}
-#box {max-width:700px;min-width:400px;overflow:auto;margin: 25px auto 10px auto;padding: 10px 40px;text-align: %LEFT_STR%;direction: %DIRECTION%;}
-h1 {font-size: 160%;margin-bottom: 0px;}
-h2 {margin: 5px 0px;font-size: 100%;font-weight: bold;}
-dl {margin-top: 0px;}
-dt {display: block;float: %LEFT_STR%;min-width: 24%;margin: 0 0 0.3em 1%}
-dd {margin: 0 0 0.3em 28%;word-wrap:break-word;}
-p {margin-%LEFT_STR%: 1%;}
-.about-img {float: %RIGHT_STR%;margin-top:10px;width:300px;}
-table.tbl {width: 100%;margin: 15px 0;border-radius: 4px;padding: 0px;border: 2px solid;border-collapse: separate;}
-.tbl th{border-radius: 2px;border: 1px solid;padding: 1px 3px;font-style:italic;}
-.tbl th[colspan="2"] {text-align: center;font-style:normal;}
-.tbl td{border-radius: 2px;border: 1px solid;text-align: center;padding:1px 3px;}
-.tbl td:first-child{text-align: %LEFT_STR%;padding:1px 3px 1px 5px;}
-.no-available-plugins{text-align: center !important;}
-.tbl td:nth-of-type(2){max-width: 400px;max-height: 50px;overflow:auto;}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <title>%TITLE%</title>
 
-@media (prefers-color-scheme: light) {
-  html {background: #dddddd;color: #525c66;}
-  #box {background: #ffffff;}
-  h1 {color: #1a4ba4;}
-  dd {color: black;}
-  table.tbl {border-color: #aaa;}
-  .tbl th[colspan="2"] {background: #ddd;}
-  .tbl th {background: #eee;border-color: #aaa;}
-  .tbl td {border-color: #aaa;}
-  .tbl td:first-child {background: #eee;}
-  .no-available-plugins {background: white !important;}
-  .tbl td:nth-of-type(2) {color: black;}
-  .dark {display: none;}
-}
-@media (prefers-color-scheme: dark) {
-  html {background: #070709;color: #dddddd;}
-  #box {background: #171717;}
-  h1 {color: #0078d7;}
-  dd {color: white;}
-  table.tbl {border-color: #555;}
-  .tbl th[colspan="2"] {background: #353535;}
-  .tbl th {background: #252525;border-color: #555;}
-  .tbl td {border-color: #555;}
-  .tbl td:first-child {background: #252525;}
-  .no-available-plugins {background: black !important;}
-  .tbl td:nth-of-type(2) {color: white;}
-  .light {display: none;}
-}
-</style>
-<script type="text/javascript">
-function addPlugins() {
-    var table = document.getElementById('npapi-plugins');
-    var existing = {};
-    for (var i = 0; i < navigator.plugins.length; i++) {
-        var plugin = navigator.plugins[i];
-        if (plugin.name == '' || existing[plugin.filename]) {
-            continue;
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: "DejaVu Sans", sans-serif;
+            background: #303030;
+            color: #eeeeee;
         }
-        existing[plugin.filename] = true;
-        table.innerHTML += "<tr><td>" + plugin.name + "</td><td colspan=3>"
-            + plugin.description + " (" + plugin.filename + ")</td></tr>";
-    }
-}
-window.addEventListener("load", addPlugins, false);
-</script>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 32px 20px;
+            line-height: 1.6;
+        }
+
+        #box {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 36px;
+            background: #383838;
+            border: 1px solid #484848;
+            border-radius: 12px;
+            overflow-wrap: anywhere;
+            direction:% DIRECTION%;
+            text-align:% LEFT_STR%;
+        }
+
+        .branding {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 32px;
+            padding-bottom: 28px;
+            margin-bottom: 28px;
+            border-bottom: 1px solid #505050;
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .falkon-logo {
+            width: 100%;
+            max-width: 260px;
+            height: 110px;
+            object-fit: contain;
+        }
+
+        .browser-logo {
+            width: 110px;
+            height: 110px;
+            object-fit: contain;
+        }
+
+        .brand-label {
+            color: #bbbbbb;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0 0 16px;
+            font-size: 26px;
+            color: #ffffff;
+        }
+
+        h2 {
+            margin: 28px 0 12px;
+            font-size: 16px;
+            color: #eeeeee;
+        }
+
+        dl {
+            margin-top: 12px;
+        }
+
+        dt {
+            display: block;
+            float:% LEFT_STR%;
+            width: 28%;
+            margin-bottom: 8px;
+            color: #bbbbbb;
+        }
+
+        dd {
+            margin: 0 0 8px 30%;
+            color: #ffffff;
+            overflow-wrap: anywhere;
+        }
+
+        p {
+            margin-
+
+        % LEFT_STR %: 1 %;
+            overflow-wrap: anywhere;
+        }
+
+        a {
+            color: #9fc9ff;
+        }
+
+        table.tbl {
+            width: 100%;
+            margin: 15px 0;
+            border: 1px solid #555555;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .tbl th {
+            padding: 10px;
+            background: #454545;
+            border: 1px solid #555555;
+            text-align: center;
+        }
+
+        .tbl td {
+            padding: 9px;
+            background: #383838;
+            border: 1px solid #555555;
+            overflow-wrap: anywhere;
+        }
+
+        .tbl td:first-child {
+            text-align:% LEFT_STR%;
+            background: #404040;
+        }
+
+        .tbl td:nth-of-type(2) {
+            max-width: 400px;
+            color: #eeeeee;
+        }
+
+        .no-available-plugins {
+            text-align: center !important;
+        }
+
+        small {
+            color: #bbbbbb;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 650px) {
+            #box {
+                padding: 20px;
+            }
+
+            .branding {
+                gap: 12px;
+            }
+
+            .falkon-logo {
+                height: 75px;
+            }
+
+            .browser-logo {
+                width: 75px;
+                height: 75px;
+            }
+
+            dt {
+                float: none;
+                width: 100%;
+            }
+
+            dd {
+                margin-left: 0;
+            }
+
+            table.tbl {
+                font-size: 11px;
+            }
+
+            .tbl th,
+            .tbl td {
+                padding: 5px;
+            }
+        }
+    </style>
+
+    <script type="text/javascript">
+        function addPlugins() {
+            var table = document.getElementById('npapi-plugins');
+            var existing = {};
+
+            for (var i = 0; i < navigator.plugins.length; i++) {
+                var plugin = navigator.plugins[i];
+
+                if (plugin.name == '' || existing[plugin.filename]) {
+                    continue;
+                }
+
+                existing[plugin.filename] = true;
+
+                table.innerHTML +=
+                    "<tr><td>" + plugin.name +
+                    "</td><td colspan=3>" +
+                    plugin.description +
+                    " (" + plugin.filename + ")</td></tr>";
+            }
+        }
+
+        window.addEventListener("load", addPlugins, false);
+    </script>
 </head>
+
 <body>
-  <div id="box">
-  <img src="%ABOUT-IMG%" class="about-img light">
-  <img src="%ABOUT-IMG-DARK%" class="about-img dark">
-<h1>%CONFIG%</h1>
-<h2>%INFORMATIONS-ABOUT-VERSION%</h2>
- <dl>
-  %VERSION-INFO%
- </dl>
- 
- <h2>%BROWSER-IDENTIFICATION%</h2>
- <p>%USER-AGENT%</p>
- 
- <h2>%PATHS%</h2>
- <dl>
-  %PATHS-TEXT%
- </dl>
- 
- <h2>%BUILD-CONFIG%</h2>
- <dl>
-  %BUILD-CONFIG-TEXT%
- </dl>
- 
- <h2>%PLUGINS%</h2>
+<div id="box">
 
-  <table class="tbl">
-    <thead>
-      <tr><th>%PL-NAME%</th><th>%PL-VER%</th><th>%PL-AUTH%</th><th>%PL-DESC%</th></tr>
-    </thead>
-    <tbody>
-      %PLUGINS-INFO%
-    </tbody>
-    <tbody id="npapi-plugins">
+    <div class="branding">
+        <div class="brand">
+            <img
+                    alt="Falkon"
+                    class="falkon-logo"
+                    src="%ABOUT-IMG%"
+            >
+            <span class="brand-label">Falkon</span>
+        </div>
 
-    </tbody>
-  </table>
+        <div class="brand">
+            <img
+                    alt="browser:e8y6"
+                    class="browser-logo"
+                    src="%BROWSER-LOGO%"
+            >
+            <span class="brand-label">browser:e8y6</span>
+        </div>
+    </div>
 
-<h2>%PREFS%</h2>
+    <h1>browser:e8y6 Configuration</h1>
 
-  <table class="tbl">
-    <thead>
-      <tr><th>%OPTION%</th><th>%VALUE%</th></tr>
-    </thead>
-    <tbody>
-      %PREFS-INFO%
-    </tbody>
-  </table>
+    <h2>%INFORMATIONS-ABOUT-VERSION%</h2>
+    <dl>
+        %VERSION-INFO%
+    </dl>
 
-<small style="text-align:justify">
-%CONFIG-ABOUT%
-</small>
+    <h2>%BROWSER-IDENTIFICATION%</h2>
+    <p>%USER-AGENT%</p>
+
+    <h2>%PATHS%</h2>
+    <dl>
+        %PATHS-TEXT%
+    </dl>
+
+    <h2>%BUILD-CONFIG%</h2>
+    <dl>
+        %BUILD-CONFIG-TEXT%
+    </dl>
+
+    <h2>%PLUGINS%</h2>
+
+    <table class="tbl">
+        <thead>
+        <tr>
+            <th>%PL-NAME%</th>
+            <th>%PL-VER%</th>
+            <th>%PL-AUTH%</th>
+            <th>%PL-DESC%</th>
+        </tr>
+        </thead>
+        <tbody>
+        %PLUGINS-INFO%
+        </tbody>
+        <tbody id="npapi-plugins">
+        </tbody>
+    </table>
+
+    <h2>%PREFS%</h2>
+
+    <table class="tbl">
+        <thead>
+        <tr>
+            <th>%OPTION%</th>
+            <th>%VALUE%</th>
+        </tr>
+        </thead>
+        <tbody>
+        %PREFS-INFO%
+        </tbody>
+    </table>
+
+    <small style="text-align: justify;">
+        %CONFIG-ABOUT%
+    </small>
+
 </div>
-</body></html>
+</body>
+</html>

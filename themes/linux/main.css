@@ -42,9 +42,10 @@
     qproperty-themeIcon: "go-home";
 }
 
+
 #navigation-button-addtab
 {
-    qproperty-themeIcon: "list-add";
+    qproperty-fallbackIcon: url(images/new-tab.svg);
 }
 
 #navigation-button-tools
@@ -111,11 +112,12 @@ ToolButton[button-id="button-downloads"]
     qproperty-fixedsize: 22px 25px;
 }
 
+
 #tabwidget-button-addtab
 {
-    qproperty-themeIcon: "list-add";
     qproperty-fixedsize: 22px 25px;
 }
+
 
 /*IconProvider*/
 IconProvider

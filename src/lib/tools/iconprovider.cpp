@@ -30,20 +30,17 @@
 
 Q_GLOBAL_STATIC(IconProvider, qz_icon_provider)
 
-static QByteArray encodeUrl(const QUrl &url)
-{
+static QByteArray encodeUrl(const QUrl &url) {
     return url.toEncoded(QUrl::RemoveFragment | QUrl::StripTrailingSlash);
 }
 
 IconProvider::IconProvider()
-    : QWidget()
-{
+    : QWidget() {
     m_autoSaver = new AutoSaver(this);
     connect(m_autoSaver, &AutoSaver::save, this, &IconProvider::saveIconsToDatabase);
 }
 
-void IconProvider::saveIcon(WebView* view)
-{
+void IconProvider::saveIcon(WebView *view) {
     // Don't save icons in private mode.
     if (mApp->isPrivate()) {
         return;
@@ -82,107 +79,107 @@ void IconProvider::saveIcon(WebView* view)
     m_iconBuffer.append(item);
 }
 
-QIcon IconProvider::bookmarkIcon() const
-{
+QIcon IconProvider::bookmarkIcon() const {
     return QIcon::fromTheme(QSL("bookmarks"), m_bookmarkIcon);
 }
 
-void IconProvider::setBookmarkIcon(const QIcon &icon)
-{
+void IconProvider::setBookmarkIcon(const QIcon &icon) {
     m_bookmarkIcon = icon;
 }
 
-QIcon IconProvider::standardIcon(QStyle::StandardPixmap icon)
-{
+QIcon IconProvider::standardIcon(QStyle::StandardPixmap icon) {
     switch (icon) {
-    case QStyle::SP_MessageBoxCritical:
-        return QIcon::fromTheme(QSL("dialog-error"), QApplication::style()->standardIcon(icon));
+        case QStyle::SP_MessageBoxCritical:
+            return QIcon::fromTheme(QSL("dialog-error"), QApplication::style()->standardIcon(icon));
 
-    case QStyle::SP_MessageBoxInformation:
-        return QIcon::fromTheme(QSL("dialog-information"), QApplication::style()->standardIcon(icon));
+        case QStyle::SP_MessageBoxInformation:
+            return QIcon::fromTheme(QSL("dialog-information"), QApplication::style()->standardIcon(icon));
 
-    case QStyle::SP_MessageBoxQuestion:
-        return QIcon::fromTheme(QSL("dialog-question"), QApplication::style()->standardIcon(icon));
+        case QStyle::SP_MessageBoxQuestion:
+            return QIcon::fromTheme(QSL("dialog-question"), QApplication::style()->standardIcon(icon));
 
-    case QStyle::SP_MessageBoxWarning:
-        return QIcon::fromTheme(QSL("dialog-warning"), QApplication::style()->standardIcon(icon));
+        case QStyle::SP_MessageBoxWarning:
+            return QIcon::fromTheme(QSL("dialog-warning"), QApplication::style()->standardIcon(icon));
 
-    case QStyle::SP_DialogCloseButton:
-        return QIcon::fromTheme(QSL("dialog-close"), QApplication::style()->standardIcon(icon));
+        case QStyle::SP_DialogCloseButton:
+            return QIcon::fromTheme(QSL("dialog-close"), QApplication::style()->standardIcon(icon));
 
-    case QStyle::SP_BrowserStop:
-        return QIcon::fromTheme(QSL("process-stop"), QApplication::style()->standardIcon(icon));
+        case QStyle::SP_BrowserStop:
+            return QIcon::fromTheme(QSL("process-stop"), QApplication::style()->standardIcon(icon));
 
-    case QStyle::SP_BrowserReload:
-        return QIcon::fromTheme(QSL("view-refresh"), QApplication::style()->standardIcon(icon));
+        case QStyle::SP_BrowserReload:
+            return QIcon::fromTheme(QSL("view-refresh"), QApplication::style()->standardIcon(icon));
 
-    case QStyle::SP_FileDialogToParent:
-        return QIcon::fromTheme(QSL("go-up"), QApplication::style()->standardIcon(icon));
+        case QStyle::SP_FileDialogToParent:
+            return QIcon::fromTheme(QSL("go-up"), QApplication::style()->standardIcon(icon));
 
-    case QStyle::SP_ArrowUp:
-        return QIcon::fromTheme(QSL("go-up"), QApplication::style()->standardIcon(icon));
+        case QStyle::SP_ArrowUp:
+            return QIcon::fromTheme(QSL("go-up"), QApplication::style()->standardIcon(icon));
 
-    case QStyle::SP_ArrowDown:
-        return QIcon::fromTheme(QSL("go-down"), QApplication::style()->standardIcon(icon));
+        case QStyle::SP_ArrowDown:
+            return QIcon::fromTheme(QSL("go-down"), QApplication::style()->standardIcon(icon));
 
-    case QStyle::SP_ArrowForward:
-        if (QApplication::layoutDirection() == Qt::RightToLeft) {
-            return QIcon::fromTheme(QSL("go-previous"), QApplication::style()->standardIcon(icon));
-        }
-        return QIcon::fromTheme(QSL("go-next"), QApplication::style()->standardIcon(icon));
-
-    case QStyle::SP_ArrowBack:
-        if (QApplication::layoutDirection() == Qt::RightToLeft) {
+        case QStyle::SP_ArrowForward:
+            if (QApplication::layoutDirection() == Qt::RightToLeft) {
+                return QIcon::fromTheme(QSL("go-previous"), QApplication::style()->standardIcon(icon));
+            }
             return QIcon::fromTheme(QSL("go-next"), QApplication::style()->standardIcon(icon));
-        }
-        return QIcon::fromTheme(QSL("go-previous"), QApplication::style()->standardIcon(icon));
 
-    default:
-        return QApplication::style()->standardIcon(icon);
+        case QStyle::SP_ArrowBack:
+            if (QApplication::layoutDirection() == Qt::RightToLeft) {
+                return QIcon::fromTheme(QSL("go-next"), QApplication::style()->standardIcon(icon));
+            }
+            return QIcon::fromTheme(QSL("go-previous"), QApplication::style()->standardIcon(icon));
+
+        default:
+            return QApplication::style()->standardIcon(icon);
     }
 }
 
-QIcon IconProvider::newTabIcon()
-{
+QIcon IconProvider::newTabIcon() {
     return QIcon::fromTheme(QSL("tab-new"), QIcon(QSL(":/icons/menu/tab-new.svg")));
 }
 
-QIcon IconProvider::newWindowIcon()
-{
+QIcon IconProvider::newWindowIcon() {
     return QIcon::fromTheme(QSL("window-new"), QIcon(QSL(":/icons/menu/window-new.svg")));
 }
 
-QIcon IconProvider::privateBrowsingIcon()
-{
+QIcon IconProvider::privateBrowsingIcon() {
     return QIcon::fromTheme(QSL("view-private-symbolic"), QIcon(QSL(":/icons/menu/privatebrowsing.png")));
 }
 
-QIcon IconProvider::settingsIcon()
-{
+QIcon IconProvider::settingsIcon() {
     return QIcon::fromTheme(QSL("configure"), QIcon(QSL(":/icons/menu/settings.svg")));
 }
 
-QIcon IconProvider::emptyWebIcon()
-{
+QIcon IconProvider::emptyWebIcon() {
     return QPixmap::fromImage(instance()->emptyWebImage());
 }
 
-QImage IconProvider::emptyWebImage()
-{
+
+QImage IconProvider::emptyWebImage() {
     if (instance()->m_emptyWebImage.isNull()) {
-        instance()->m_emptyWebImage = QIcon(QSL(":icons/other/webpage.svg")).pixmap(16).toImage();
+        QIcon defaultIcon(QSL(":/icons/other/webpage.svg"));
+
+        if (defaultIcon.isNull()) {
+            defaultIcon = QApplication::style()->standardIcon(
+                QStyle::SP_FileIcon
+            );
+        }
+
+        instance()->m_emptyWebImage =
+                defaultIcon.pixmap(16, 16).toImage();
     }
 
     return instance()->m_emptyWebImage;
 }
 
-QIcon IconProvider::iconForUrl(const QUrl &url, bool allowNull)
-{
+
+QIcon IconProvider::iconForUrl(const QUrl &url, bool allowNull) {
     return instance()->iconFromImage(imageForUrl(url, allowNull));
 }
 
-QImage IconProvider::imageForUrl(const QUrl &url, bool allowNull)
-{
+QImage IconProvider::imageForUrl(const QUrl &url, bool allowNull) {
     if (url.path().isEmpty()) {
         return allowNull ? QImage() : IconProvider::emptyWebImage();
     }
@@ -196,7 +193,7 @@ QImage IconProvider::imageForUrl(const QUrl &url, bool allowNull)
     }
 
     const auto iconBuffer = instance()->m_iconBuffer;
-    for (const BufferedIcon &ic : iconBuffer) {
+    for (const BufferedIcon &ic: iconBuffer) {
         if (encodeUrl(ic.first) == encodedUrl) {
             return ic.second;
         }
@@ -216,13 +213,11 @@ QImage IconProvider::imageForUrl(const QUrl &url, bool allowNull)
     return img->isNull() && !allowNull ? IconProvider::emptyWebImage() : *img;
 }
 
-QIcon IconProvider::iconForDomain(const QUrl &url, bool allowNull)
-{
+QIcon IconProvider::iconForDomain(const QUrl &url, bool allowNull) {
     return instance()->iconFromImage(imageForDomain(url, allowNull));
 }
 
-QImage IconProvider::imageForDomain(const QUrl &url, bool allowNull)
-{
+QImage IconProvider::imageForDomain(const QUrl &url, bool allowNull) {
     if (url.host().isEmpty()) {
         return allowNull ? QImage() : IconProvider::emptyWebImage();
     }
@@ -230,7 +225,7 @@ QImage IconProvider::imageForDomain(const QUrl &url, bool allowNull)
     QMutexLocker locker(&instance()->m_iconCacheMutex);
 
     const auto iconBuffer = instance()->m_iconBuffer;
-    for (const BufferedIcon &ic : iconBuffer) {
+    for (const BufferedIcon &ic: iconBuffer) {
         if (ic.first.host() == url.host()) {
             return ic.second;
         }
@@ -248,16 +243,14 @@ QImage IconProvider::imageForDomain(const QUrl &url, bool allowNull)
     return allowNull ? QImage() : IconProvider::emptyWebImage();
 }
 
-IconProvider* IconProvider::instance()
-{
+IconProvider *IconProvider::instance() {
     return qz_icon_provider();
 }
 
-void IconProvider::saveIconsToDatabase()
-{
+void IconProvider::saveIconsToDatabase() {
     QMutexLocker locker(&instance()->m_iconCacheMutex);
 
-    for (const BufferedIcon &ic : std::as_const(m_iconBuffer)) {
+    for (const BufferedIcon &ic: std::as_const(m_iconBuffer)) {
         QByteArray ba;
         QBuffer buffer(&ba);
         buffer.open(QIODevice::WriteOnly);
@@ -275,8 +268,7 @@ void IconProvider::saveIconsToDatabase()
     m_iconBuffer.clear();
 }
 
-void IconProvider::clearOldIconsInDatabase()
-{
+void IconProvider::clearOldIconsInDatabase() {
     // Delete icons for entries older than 6 months
     const QDateTime date = QDateTime::currentDateTime().addMonths(-6);
 
@@ -289,7 +281,6 @@ void IconProvider::clearOldIconsInDatabase()
     query.exec(QSL("VACUUM"));
 }
 
-QIcon IconProvider::iconFromImage(const QImage &image)
-{
+QIcon IconProvider::iconFromImage(const QImage &image) {
     return QIcon(QPixmap::fromImage(image));
 }

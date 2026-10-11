@@ -149,7 +149,14 @@ Preferences::Preferences(BrowserWindow* window)
     ui->homepage->setText(QString::fromUtf8(m_homepage.toEncoded()));
     ui->newTabUrl->setText(QString::fromUtf8(m_newTabUrl.toEncoded()));
     settings.endGroup();
+
+    // The former Speed Dial startup option now opens our homepage.
+    ui->afterLaunch->setItemText(2, tr("Open browser:e8y6 start page"));
     ui->afterLaunch->setCurrentIndex(mApp->afterLaunch());
+
+    // Replace the former Speed Dial new-tab option.
+    ui->newTab->setItemText(2, tr("Open browser:e8y6 start page"));
+
     ui->checkUpdates->setChecked(settings.value(QSL("Web-Browser-Settings/CheckUpdates"), true).toBool());
     ui->dontLoadTabsUntilSelected->setChecked(settings.value(QSL("Web-Browser-Settings/LoadTabsOnActivation"), true).toBool());
 
@@ -468,7 +475,9 @@ Preferences::Preferences(BrowserWindow* window)
     //KEYBOARD SHORTCUTS
     settings.beginGroup(QSL("Shortcuts"));
     ui->switchTabsAlt->setChecked(settings.value(QSL("useTabNumberShortcuts"), true).toBool());
-    ui->loadSpeedDialsCtrl->setChecked(settings.value(QSL("useSpeedDialNumberShortcuts"), true).toBool());
+
+    ui->loadSpeedDialsCtrl->hide();
+
     ui->singleKeyShortcuts->setChecked(settings.value(QSL("useSingleKeyShortcuts"), false).toBool());
     settings.endGroup();
 
@@ -1043,7 +1052,7 @@ void Preferences::saveSettings()
     //KEYBOARD SHORTCUTS
     settings.beginGroup(QSL("Shortcuts"));
     settings.setValue(QSL("useTabNumberShortcuts"), ui->switchTabsAlt->isChecked());
-    settings.setValue(QSL("useSpeedDialNumberShortcuts"), ui->loadSpeedDialsCtrl->isChecked());
+    /*settings.setValue(QSL("useSpeedDialNumberShortcuts"), ui->loadSpeedDialsCtrl->isChecked());*/
     settings.setValue(QSL("useSingleKeyShortcuts"), ui->singleKeyShortcuts->isChecked());
     settings.endGroup();
 

@@ -761,16 +761,6 @@ void WebView::createPageContextMenu(QMenu* menu)
     action->setIcon(IconProvider::standardIcon(QStyle::SP_ArrowForward));
     action->setEnabled(history()->canGoForward());
 
-    // Special menu for Speed Dial page
-    if (url().toString() == QL1S("falkon:speeddial")) {
-        menu->addSeparator();
-        menu->addAction(QIcon::fromTheme(QSL("list-add")), tr("&Add New Page"), this, &WebView::addSpeedDial);
-        menu->addAction(IconProvider::settingsIcon(), tr("&Configure Speed Dial"), this, &WebView::configureSpeedDial);
-        menu->addSeparator();
-        menu->addAction(QIcon::fromTheme(QSL("view-refresh")), tr("Reload All Dials"), this, &WebView::reloadAllSpeedDials);
-        return;
-    }
-
     QAction *reloadAction = pageAction(QWebEnginePage::Reload);
     action = menu->addAction(reloadAction->icon(), reloadAction->text(), reloadAction, &QAction::trigger);
     action->setVisible(reloadAction->isEnabled());
@@ -953,21 +943,6 @@ void WebView::createSearchEngine()
     page()->runJavaScript(Scripts::getFormData(m_clickedPos), WebPage::SafeJsWorld, [this](const QVariant &res) {
         mApp->searchEnginesManager()->addEngineFromForm(res.toMap(), this);
     });
-}
-
-void WebView::addSpeedDial()
-{
-    page()->runJavaScript(QSL("addSpeedDial()"), WebPage::SafeJsWorld);
-}
-
-void WebView::configureSpeedDial()
-{
-    page()->runJavaScript(QSL("configureSpeedDial()"), WebPage::SafeJsWorld);
-}
-
-void WebView::reloadAllSpeedDials()
-{
-    page()->runJavaScript(QSL("reloadAll()"), WebPage::SafeJsWorld);
 }
 
 void WebView::toggleMediaPause()

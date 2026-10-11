@@ -9,12 +9,13 @@
 *
 * This program is distributed in the hope that it will be useful,
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://www.gnu.org/licenses/>.
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
 * ============================================================ */
+
 #include "externaljsobject.h"
 #include "mainapplication.h"
 #include "pluginproxy.h"
@@ -25,61 +26,90 @@
 
 #include <QWebChannel>
 
-static QHash<QString, QObject*> s_extraObjects;
+static QHash<QString, QObject *> s_extraObjects;
 
 ExternalJsObject::ExternalJsObject(WebPage *page)
     : QObject(page)
-    , m_page(page)
-    , m_autoFill(new AutoFillJsObject(this))
-{
+      , m_page(page)
+      , m_autoFill(new AutoFillJsObject(this)) {
 }
 
-WebPage *ExternalJsObject::page() const
-{
+WebPage *ExternalJsObject::page() const {
     return m_page;
 }
 
 // static
-void ExternalJsObject::setupWebChannel(QWebChannel *webChannel, WebPage *page)
-{
-    webChannel->registerObject(QSL("qz_object"), new ExternalJsObject(page));
+void ExternalJsObject::setupWebChannel(
+    QWebChannel *webChannel,
+    WebPage *page) {
+    webChannel->registerObject(
+        QSL("qz_object"),
+        new ExternalJsObject(page)
+    );
 
-    for (auto it = s_extraObjects.constBegin(); it != s_extraObjects.constEnd(); ++it) {
-        webChannel->registerObject(QSL("qz_") + it.key(), it.value());
+    for (auto it = s_extraObjects.constBegin();
+         it != s_extraObjects.constEnd();
+         ++it) {
+        webChannel->registerObject(
+            QSL("qz_") + it.key(),
+            it.value()
+        );
     }
 }
 
 // static
-void ExternalJsObject::registerExtraObject(const QString &id, QObject *object)
-{
+void ExternalJsObject::registerExtraObject(
+    const QString &id,
+    QObject *object) {
     s_extraObjects[id] = object;
 }
 
 // static
-void ExternalJsObject::unregisterExtraObject(QObject *object)
-{
+void ExternalJsObject::unregisterExtraObject(QObject *object) {
     s_extraObjects.remove(s_extraObjects.key(object));
 }
 
-QObject *ExternalJsObject::speedDial() const
-{
-    if (m_page->url().toString() != QL1S("falkon:speeddial")
-      && (m_page->requestedUrl().toString() != QL1S("falkon:speeddial") && !m_page->url().toString().isEmpty())) {
+QObject *ExternalJsObject::speedDial() const {
+    const QUrl currentUrl = m_page->url();
+    const QUrl requestedUrl = m_page->requestedUrl();
+
+    const bool currentIsSpeedDial =
+            currentUrl == QUrl(QSL("falkon:speeddial")) ||
+            currentUrl == QUrl(QSL("browser-e8y6:speeddial"));
+
+    const bool requestedIsSpeedDial =
+            requestedUrl == QUrl(QSL("falkon:speeddial")) ||
+            requestedUrl == QUrl(QSL("browser-e8y6:speeddial"));
+
+    // Allow only the original Speed Dial page
+    // and its browser:e8y6 alias.
+    // Preserve the existing initial-navigation behavior.
+    if (!currentIsSpeedDial &&
+        (!requestedIsSpeedDial || !currentUrl.isEmpty())) {
         return nullptr;
     }
 
     return mApp->plugins()->speedDial();
 }
 
-QObject *ExternalJsObject::autoFill() const
-{
+QObject *ExternalJsObject::autoFill() const {
     return m_autoFill;
 }
 
-QObject *ExternalJsObject::recovery() const
-{
-    if (!mApp->restoreManager() || m_page->url().toString() != QL1S("falkon:restore"))
+QObject *ExternalJsObject::recovery() const {
+    if (!mApp->restoreManager()) {
         return nullptr;
+    }
+
+    const QUrl currentUrl = m_page->url();
+
+    const bool isRecoveryPage =
+            currentUrl == QUrl(QSL("falkon:restore")) ||
+            currentUrl == QUrl(QSL("browser-e8y6:restore"));
+
+    if (!isRecoveryPage) {
+        return nullptr;
+    }
 
     return mApp->restoreManager()->recoveryObject(m_page);
 }

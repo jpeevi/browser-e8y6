@@ -15,6 +15,7 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 * ============================================================ */
+#include <QRegularExpression>
 #include "browserwindow.h"
 #include "tabwidget.h"
 #include "tabbar.h"
@@ -89,8 +90,7 @@ static const int savedWindowVersion = 2;
 BrowserWindow::SavedWindow::SavedWindow()
 = default;
 
-BrowserWindow::SavedWindow::SavedWindow(BrowserWindow *window)
-{
+BrowserWindow::SavedWindow::SavedWindow(BrowserWindow *window) {
     windowState = window->isFullScreen() ? QByteArray() : window->saveState();
     windowGeometry = window->saveGeometry();
     windowUiState = window->saveUiState();
@@ -105,7 +105,7 @@ BrowserWindow::SavedWindow::SavedWindow(BrowserWindow *window)
         if (!webView) {
             continue;
         }
-        WebTab* webTab = webView->webTab();
+        WebTab *webTab = webView->webTab();
         if (!webTab) {
             continue;
         }
@@ -120,9 +120,8 @@ BrowserWindow::SavedWindow::SavedWindow(BrowserWindow *window)
     }
 }
 
-bool BrowserWindow::SavedWindow::isValid() const
-{
-    for (const WebTab::SavedTab &tab : std::as_const(tabs)) {
+bool BrowserWindow::SavedWindow::isValid() const {
+    for (const WebTab::SavedTab &tab: std::as_const(tabs)) {
         if (!tab.isValid()) {
             return false;
         }
@@ -130,8 +129,7 @@ bool BrowserWindow::SavedWindow::isValid() const
     return currentTab > -1;
 }
 
-void BrowserWindow::SavedWindow::clear()
-{
+void BrowserWindow::SavedWindow::clear() {
     windowState.clear();
     windowGeometry.clear();
     virtualDesktop = -1;
@@ -139,8 +137,7 @@ void BrowserWindow::SavedWindow::clear()
     tabs.clear();
 }
 
-QDataStream &operator<<(QDataStream &stream, const BrowserWindow::SavedWindow &window)
-{
+QDataStream &operator<<(QDataStream &stream, const BrowserWindow::SavedWindow &window) {
     stream << savedWindowVersion;
     stream << window.windowState;
     stream << window.windowGeometry;
@@ -157,8 +154,7 @@ QDataStream &operator<<(QDataStream &stream, const BrowserWindow::SavedWindow &w
     return stream;
 }
 
-QDataStream &operator>>(QDataStream &stream, BrowserWindow::SavedWindow &window)
-{
+QDataStream &operator>>(QDataStream &stream, BrowserWindow::SavedWindow &window) {
     int version;
     stream >> version;
 
@@ -190,19 +186,18 @@ QDataStream &operator>>(QDataStream &stream, BrowserWindow::SavedWindow &window)
 
 BrowserWindow::BrowserWindow(Qz::BrowserWindowType type, const QList<QUrl> startUrls)
     : QMainWindow(nullptr)
-    , m_startUrls(startUrls)
-    , m_windowType(type)
-    , m_startTab(nullptr)
-    , m_startPage(nullptr)
-    , m_sideBarManager(new SideBarManager(this))
-    , m_hideNavigationTimer(nullptr)
-    , m_windowLaunched(false)
-{
+      , m_startUrls(startUrls)
+      , m_windowType(type)
+      , m_startTab(nullptr)
+      , m_startPage(nullptr)
+      , m_sideBarManager(new SideBarManager(this))
+      , m_hideNavigationTimer(nullptr)
+      , m_windowLaunched(false) {
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_DontCreateNativeAncestors);
 
     setObjectName(QSL("mainwindow"));
-    setWindowTitle(tr("Falkon"));
+    setWindowTitle(QSL("browser:e8y6"));
     setProperty("private", mApp->isPrivate());
 
     setupUi();
@@ -219,83 +214,88 @@ BrowserWindow::BrowserWindow(Qz::BrowserWindowType type, const QList<QUrl> start
 
     if (mApp->isPrivate()) {
         QzTools::setWmClass(QSL("browser:e8y6 (Private Window)"), this);
-    }
-    else {
+    } else {
         QzTools::setWmClass(QSL("browser:e8y6"), this);
     }
 }
 
-BrowserWindow::~BrowserWindow()
-{
+BrowserWindow::~BrowserWindow() {
     mApp->plugins()->emitMainWindowDeleted(this);
 
-    for (const QPointer<QWidget> &pointer : std::as_const(m_deleteOnCloseWidgets)) {
+    for (const QPointer<QWidget> &pointer: std::as_const(m_deleteOnCloseWidgets)) {
         if (pointer) {
             pointer->deleteLater();
         }
     }
 }
 
-void BrowserWindow::setStartTab(WebTab* tab)
-{
+void BrowserWindow::setStartTab(WebTab *tab) {
     m_startTab = tab;
 }
 
-void BrowserWindow::setStartPage(WebPage *page)
-{
+void BrowserWindow::setStartPage(WebPage *page) {
     m_startPage = page;
 }
 
-void BrowserWindow::postLaunch()
-{
+void BrowserWindow::postLaunch() {
     loadSettings();
 
     bool addTab = true;
     QUrl startUrl;
 
     switch (mApp->afterLaunch()) {
-    case MainApplication::OpenBlankPage:
-        startUrl = QUrl();
-        break;
+        case MainApplication::OpenBlankPage:
+            startUrl = QUrl();
+            break;
 
-    case MainApplication::OpenSpeedDial:
-        startUrl = QUrl(QSL("falkon:speeddial"));
-        break;
 
-    case MainApplication::OpenHomePage:
-    case MainApplication::RestoreSession:
-    case MainApplication::SelectSession:
-        startUrl = m_homepage;
-        break;
+        case MainApplication::OpenSpeedDial:
+        case MainApplication::OpenHomePage:
+            startUrl = QUrl(QSL("browser-e8y6:start"));
+            break;
 
-    default:
-        break;
+        case MainApplication::RestoreSession:
+        case MainApplication::SelectSession:
+            startUrl = m_homepage;
+            break;
+
+
+        default:
+            break;
     }
+
+
+    // Normalize the legacy start-page address.
+    // Keep ordinary homepages and saved session URLs unchanged.
+    if (startUrl == QUrl(QSL("falkon:start"))) {
+        startUrl = QUrl(QSL("browser-e8y6:start"));
+    }
+
 
     if (!mApp->isTestModeEnabled()) {
         show();
     }
 
     switch (m_windowType) {
-    case Qz::BW_FirstAppWindow:
-        if (mApp->isStartingAfterCrash()) {
+        case Qz::BW_FirstAppWindow:
+            if (mApp->isStartingAfterCrash()) {
+                addTab = false;
+                startUrl.clear();
+                m_tabWidget->addView(QUrl(QSL("falkon:restore")), Qz::NT_CleanSelectedTabAtTheEnd);
+            } else if (mApp->afterLaunch() == MainApplication::SelectSession || mApp->afterLaunch() ==
+                       MainApplication::RestoreSession) {
+                addTab = m_tabWidget->count() <= 0;
+            }
+            break;
+
+        case Qz::BW_NewWindow:
+        case Qz::BW_MacFirstWindow:
+            addTab = true;
+            break;
+
+        case Qz::BW_OtherRestoredWindow:
             addTab = false;
-            startUrl.clear();
-            m_tabWidget->addView(QUrl(QSL("falkon:restore")), Qz::NT_CleanSelectedTabAtTheEnd);
-        }
-        else if (mApp->afterLaunch() == MainApplication::SelectSession || mApp->afterLaunch() == MainApplication::RestoreSession) {
-            addTab = m_tabWidget->count() <= 0;
-        }
-        break;
-
-    case Qz::BW_NewWindow:
-    case Qz::BW_MacFirstWindow:
-        addTab = true;
-        break;
-
-    case Qz::BW_OtherRestoredWindow:
-        addTab = false;
-        break;
+            break;
     }
 
     if (!m_startUrls.isEmpty()) {
@@ -317,11 +317,13 @@ void BrowserWindow::postLaunch()
     if (addTab) {
         m_tabWidget->addView(startUrl, Qz::NT_CleanSelectedTabAtTheEnd);
 
-        for(const QUrl &url : std::as_const(m_startUrls)) {
+        for (const QUrl &url: std::as_const(m_startUrls)) {
             m_tabWidget->addView(url, Qz::NT_NotSelectedTabAtTheEnd);
         }
 
-        if (startUrl.isEmpty() || startUrl.toString() == QLatin1String("falkon:speeddial")) {
+
+        if (startUrl.isEmpty() ||
+            startUrl.toString() == QLatin1String("browser-e8y6:start")) {
             locationBar()->setFocus();
         }
     }
@@ -340,8 +342,7 @@ void BrowserWindow::postLaunch()
     updateStartupFocus();
 }
 
-void BrowserWindow::setupUi()
-{
+void BrowserWindow::setupUi() {
     Settings settings;
     settings.beginGroup(QSL("Browser-View-Settings"));
     const QByteArray windowGeometry = settings.value(QSL("WindowGeometry")).toByteArray();
@@ -354,14 +355,14 @@ void BrowserWindow::setupUi()
         QSL("SideBar")
     };
     QHash<QString, QVariant> uiState;
-    for (const QString &key : keys) {
+    for (const QString &key: keys) {
         if (settings.contains(key)) {
             uiState[key] = settings.value(key);
         }
     }
     settings.endGroup();
 
-    auto* widget = new QWidget(this);
+    auto *widget = new QWidget(this);
     widget->setCursor(Qt::ArrowCursor);
     setCentralWidget(widget);
 
@@ -442,17 +443,15 @@ void BrowserWindow::setupUi()
     setMinimumWidth(300);
 }
 
-void BrowserWindow::setupMenu()
-{
+void BrowserWindow::setupMenu() {
 #ifdef Q_OS_MACOS
-    static MainMenu* macMainMenu = 0;
+    static MainMenu *macMainMenu = 0;
 
     if (!macMainMenu) {
         macMainMenu = new MainMenu(this, 0);
         macMainMenu->initMenuBar(new QMenuBar(0));
         connect(mApp, SIGNAL(activeWindowChanged(BrowserWindow*)), macMainMenu, SLOT(setWindow(BrowserWindow*)));
-    }
-    else {
+    } else {
         macMainMenu->setWindow(this);
     }
 
@@ -466,31 +465,31 @@ void BrowserWindow::setupMenu()
     m_mainMenu->initSuperMenu(m_superMenu);
 
     // Setup other shortcuts
-    auto* reloadBypassCacheAction = new QShortcut(QKeySequence(QSL("Ctrl+F5")), this);
-    auto* reloadBypassCacheAction2 = new QShortcut(QKeySequence(QSL("Ctrl+Shift+R")), this);
+    auto *reloadBypassCacheAction = new QShortcut(QKeySequence(QSL("Ctrl+F5")), this);
+    auto *reloadBypassCacheAction2 = new QShortcut(QKeySequence(QSL("Ctrl+Shift+R")), this);
     connect(reloadBypassCacheAction, &QShortcut::activated, this, &BrowserWindow::reloadBypassCache);
     connect(reloadBypassCacheAction2, &QShortcut::activated, this, &BrowserWindow::reloadBypassCache);
 
-    auto* closeTabAction = new QShortcut(QKeySequence(QSL("Ctrl+W")), this);
-    auto* closeTabAction2 = new QShortcut(QKeySequence(QSL("Ctrl+F4")), this);
+    auto *closeTabAction = new QShortcut(QKeySequence(QSL("Ctrl+W")), this);
+    auto *closeTabAction2 = new QShortcut(QKeySequence(QSL("Ctrl+F4")), this);
     connect(closeTabAction, &QShortcut::activated, this, &BrowserWindow::closeTab);
     connect(closeTabAction2, &QShortcut::activated, this, &BrowserWindow::closeTab);
 
-    auto* reloadAction = new QShortcut(QKeySequence(QSL("Ctrl+R")), this);
+    auto *reloadAction = new QShortcut(QKeySequence(QSL("Ctrl+R")), this);
     connect(reloadAction, &QShortcut::activated, this, &BrowserWindow::reload);
 
-    auto* openLocationAction = new QShortcut(QKeySequence(QSL("Alt+D")), this);
+    auto *openLocationAction = new QShortcut(QKeySequence(QSL("Alt+D")), this);
     connect(openLocationAction, &QShortcut::activated, this, &BrowserWindow::openLocation);
 
-    auto* inspectorAction = new QShortcut(QKeySequence(QSL("F12")), this);
+    auto *inspectorAction = new QShortcut(QKeySequence(QSL("F12")), this);
     connect(inspectorAction, &QShortcut::activated, this, &BrowserWindow::toggleWebInspector);
 
-    auto* restoreClosedWindow = new QShortcut(QKeySequence(QSL("Ctrl+Shift+N")), this);
-    connect(restoreClosedWindow, &QShortcut::activated, mApp->closedWindowsManager(), &ClosedWindowsManager::restoreClosedWindow);
+    auto *restoreClosedWindow = new QShortcut(QKeySequence(QSL("Ctrl+Shift+N")), this);
+    connect(restoreClosedWindow, &QShortcut::activated, mApp->closedWindowsManager(),
+            &ClosedWindowsManager::restoreClosedWindow);
 }
 
-void BrowserWindow::updateStartupFocus()
-{
+void BrowserWindow::updateStartupFocus() {
     QTimer::singleShot(500, this, [this]() {
         // Scroll to current tab
         tabWidget()->tabBar()->ensureVisible();
@@ -502,10 +501,9 @@ void BrowserWindow::updateStartupFocus()
     });
 }
 
-QAction* BrowserWindow::createEncodingAction(const QString &codecName,
-                                             const QString &activeCodecName, QMenu* menu)
-{
-    auto* action = new QAction(codecName, menu);
+QAction *BrowserWindow::createEncodingAction(const QString &codecName,
+                                             const QString &activeCodecName, QMenu *menu) {
+    auto *action = new QAction(codecName, menu);
     action->setData(codecName);
     action->setCheckable(true);
     connect(action, &QAction::triggered, this, &BrowserWindow::changeEncoding);
@@ -515,8 +513,7 @@ QAction* BrowserWindow::createEncodingAction(const QString &codecName,
     return action;
 }
 
-void BrowserWindow::createEncodingSubMenu(const QString &name, QStringList &codecNames, QMenu* menu)
-{
+void BrowserWindow::createEncodingSubMenu(const QString &name, QStringList &codecNames, QMenu *menu) {
     if (codecNames.isEmpty()) {
         return;
     }
@@ -527,12 +524,12 @@ void BrowserWindow::createEncodingSubMenu(const QString &name, QStringList &code
         return collator.compare(a, b) < 0;
     });
 
-    auto* subMenu = new QMenu(name, menu);
+    auto *subMenu = new QMenu(name, menu);
     const QString activeCodecName = mApp->webSettings()->defaultTextEncoding();
 
     auto *group = new QActionGroup(subMenu);
 
-    for (const QString &codecName : std::as_const(codecNames)) {
+    for (const QString &codecName: std::as_const(codecNames)) {
         QAction *act = createEncodingAction(codecName, activeCodecName, subMenu);
         group->addAction(act);
         subMenu->addAction(act);
@@ -541,8 +538,7 @@ void BrowserWindow::createEncodingSubMenu(const QString &name, QStringList &code
     menu->addMenu(subMenu);
 }
 
-QHash<QString, QVariant> BrowserWindow::saveUiState()
-{
+QHash<QString, QVariant> BrowserWindow::saveUiState() {
     saveSideBarSettings();
 
     QHash<QString, QVariant> state;
@@ -554,8 +550,7 @@ QHash<QString, QVariant> BrowserWindow::saveUiState()
     return state;
 }
 
-void BrowserWindow::restoreUiState(const QHash<QString, QVariant> &state)
-{
+void BrowserWindow::restoreUiState(const QHash<QString, QVariant> &state) {
     const int locationBarWidth = state.value(QSL("LocationBarWidth"), 480).toInt();
     const int websearchBarWidth = state.value(QSL("WebSearchBarWidth"), 140).toInt();
     m_navigationToolbar->setSplitterSizes(locationBarWidth, websearchBarWidth);
@@ -574,8 +569,7 @@ void BrowserWindow::restoreUiState(const QHash<QString, QVariant> &state)
     }
 }
 
-void BrowserWindow::loadSettings()
-{
+void BrowserWindow::loadSettings() {
     Settings settings;
 
     //Url settings
@@ -601,7 +595,7 @@ void BrowserWindow::loadSettings()
 
     settings.beginGroup(QSL("Shortcuts"));
     m_useTabNumberShortcuts = settings.value(QSL("useTabNumberShortcuts"), true).toBool();
-    m_useSpeedDialNumberShortcuts = settings.value(QSL("useSpeedDialNumberShortcuts"), true).toBool();
+    /*m_useSpeedDialNumberShortcuts = settings.value(QSL("useSpeedDialNumberShortcuts"), true).toBool();*/
     m_useSingleKeyShortcuts = settings.value(QSL("useSingleKeyShortcuts"), false).toBool();
     settings.endGroup();
 
@@ -625,46 +619,39 @@ void BrowserWindow::loadSettings()
 #endif
 
     m_navigationToolbar->setSuperMenuVisible(isFullScreen() || !showMenuBar);
-    
+
     if (m_profileNameVisible != showProfileName) {
         m_profileNameVisible = showProfileName;
         currentTabChanged();
     }
 }
 
-void BrowserWindow::goForward()
-{
+void BrowserWindow::goForward() {
     weView()->forward();
 }
 
-void BrowserWindow::reload()
-{
+void BrowserWindow::reload() {
     weView()->reload();
 }
 
-void BrowserWindow::reloadBypassCache()
-{
+void BrowserWindow::reloadBypassCache() {
     weView()->reloadBypassCache();
 }
 
-void BrowserWindow::goBack()
-{
+void BrowserWindow::goBack() {
     weView()->back();
 }
 
-int BrowserWindow::tabCount() const
-{
+int BrowserWindow::tabCount() const {
     return m_tabWidget->count();
 }
 
-TabbedWebView* BrowserWindow::weView() const
-{
+TabbedWebView *BrowserWindow::weView() const {
     return weView(m_tabWidget->currentIndex());
 }
 
-TabbedWebView* BrowserWindow::weView(int index) const
-{
-    auto* webTab = qobject_cast<WebTab*>(m_tabWidget->widget(index));
+TabbedWebView *BrowserWindow::weView(int index) const {
+    auto *webTab = qobject_cast<WebTab *>(m_tabWidget->widget(index));
     if (!webTab) {
         return nullptr;
     }
@@ -672,99 +659,95 @@ TabbedWebView* BrowserWindow::weView(int index) const
     return webTab->webView();
 }
 
-LocationBar* BrowserWindow::locationBar() const
-{
-    return qobject_cast<LocationBar*>(m_tabWidget->locationBars()->currentWidget());
+LocationBar *BrowserWindow::locationBar() const {
+    return qobject_cast<LocationBar *>(m_tabWidget->locationBars()->currentWidget());
 }
 
-TabWidget* BrowserWindow::tabWidget() const
-{
+TabWidget *BrowserWindow::tabWidget() const {
     return m_tabWidget;
 }
 
-BookmarksToolbar* BrowserWindow::bookmarksToolbar() const
-{
+BookmarksToolbar *BrowserWindow::bookmarksToolbar() const {
     return m_bookmarksToolbar;
 }
 
-StatusBar* BrowserWindow::statusBar() const
-{
+StatusBar *BrowserWindow::statusBar() const {
     return m_statusBar;
 }
 
-NavigationBar* BrowserWindow::navigationBar() const
-{
+NavigationBar *BrowserWindow::navigationBar() const {
     return m_navigationToolbar;
 }
 
-SideBarManager* BrowserWindow::sideBarManager() const
-{
+SideBarManager *BrowserWindow::sideBarManager() const {
     return m_sideBarManager;
 }
 
-QLabel* BrowserWindow::ipLabel() const
-{
+QLabel *BrowserWindow::ipLabel() const {
     return m_ipLabel;
 }
 
-QMenu* BrowserWindow::superMenu() const
-{
+QMenu *BrowserWindow::superMenu() const {
     return m_superMenu;
 }
 
-QUrl BrowserWindow::homepageUrl() const
-{
+QUrl BrowserWindow::homepageUrl() const {
     return m_homepage;
 }
 
-Qz::BrowserWindowType BrowserWindow::windowType() const
-{
+Qz::BrowserWindowType BrowserWindow::windowType() const {
     return m_windowType;
 }
 
-QAction* BrowserWindow::action(const QString &name) const
-{
+QAction *BrowserWindow::action(const QString &name) const {
     return m_mainMenu->action(name);
 }
 
-TabModel *BrowserWindow::tabModel() const
-{
+TabModel *BrowserWindow::tabModel() const {
     return m_tabModel;
 }
 
-TabMruModel *BrowserWindow::tabMruModel() const
-{
+TabMruModel *BrowserWindow::tabMruModel() const {
     return m_tabMruModel;
 }
 
-bool BrowserWindow::useTabNumberShortcuts() const
-{
+bool BrowserWindow::useTabNumberShortcuts() const {
     return m_useTabNumberShortcuts;
 }
 
+
 void BrowserWindow::setWindowTitle(const QString &t)
 {
-    QString title = t;
+    QString title = t.trimmed();
 
-    if (m_profileNameVisible) {
-        QString profileName;
-        if (mApp->wmClass().isEmpty()) {
-            profileName = ProfileManager::currentProfile();
-        } else {
-            profileName = QString::fromStdString(mApp->wmClass().toStdString());
-        }
-        
-        title.append(tr(" [") + profileName + QStringLiteral("] "));
+    // Remove legacy Falkon suffixes from window titles.
+    title.remove(QRegularExpression(
+        QSL("\\s*[-—]\\s*Falkon(?:\\s*\\[[^\\]]*\\])?")
+    ));
+
+    // Avoid duplicating our application name.
+    title.remove(QRegularExpression(
+        QSL("\\s*[-—]\\s*browser:e8y6$")
+    ));
+
+    if (title.isEmpty()) {
+        title = QSL("browser:e8y6");
     }
+
+    if (title != QSL("browser:e8y6")) {
+        title += QSL(" — browser:e8y6");
+    }
+
     if (mApp->isPrivate()) {
-        title.append(tr(" (Private Browsing)"));
+        title += QSL(" (Private)");
     }
+
     QMainWindow::setWindowTitle(title);
 }
 
-void BrowserWindow::changeEncoding()
-{
-    if (auto* action = qobject_cast<QAction*>(sender())) {
+
+void BrowserWindow::changeEncoding() {
+    if (auto *action = qobject_cast<QAction *>(sender())) {
         const QString encoding = action->data().toString();
         mApp->webSettings()->setDefaultTextEncoding(encoding);
 
@@ -775,61 +758,52 @@ void BrowserWindow::changeEncoding()
     }
 }
 
-void BrowserWindow::printPage()
-{
+void BrowserWindow::printPage() {
     weView()->printPage();
 }
 
-void BrowserWindow::bookmarkPage()
-{
-    TabbedWebView* view = weView();
+void BrowserWindow::bookmarkPage() {
+    TabbedWebView *view = weView();
     BookmarksTools::addBookmarkDialog(this, view->url(), view->title());
 }
 
-void BrowserWindow::bookmarkAllTabs()
-{
+void BrowserWindow::bookmarkAllTabs() {
     BookmarksTools::bookmarkAllTabsDialog(this, m_tabWidget);
 }
 
-void BrowserWindow::addBookmark(const QUrl &url, const QString &title)
-{
+void BrowserWindow::addBookmark(const QUrl &url, const QString &title) {
     BookmarksTools::addBookmarkDialog(this, url, title);
 }
 
-void BrowserWindow::goHome()
-{
+void BrowserWindow::goHome() {
     loadAddress(m_homepage);
 }
 
-void BrowserWindow::goHomeInNewTab()
-{
+void BrowserWindow::goHomeInNewTab() {
     m_tabWidget->addView(m_homepage, Qz::NT_SelectedTab);
 }
 
-void BrowserWindow::loadActionUrl(QObject* obj)
-{
+void BrowserWindow::loadActionUrl(QObject *obj) {
     if (!obj) {
         obj = sender();
     }
 
-    if (auto* action = qobject_cast<QAction*>(obj)) {
+    if (auto *action = qobject_cast<QAction *>(obj)) {
         loadAddress(action->data().toUrl());
     }
 }
 
-void BrowserWindow::loadActionUrlInNewTab(QObject* obj)
-{
+void BrowserWindow::loadActionUrlInNewTab(QObject *obj) {
     if (!obj) {
         obj = sender();
     }
 
-    if (auto* action = qobject_cast<QAction*>(obj)) {
+    if (auto *action = qobject_cast<QAction *>(obj)) {
         m_tabWidget->addView(action->data().toUrl(), Qz::NT_SelectedTabAtTheEnd);
     }
 }
 
-void BrowserWindow::loadAddress(const QUrl &url)
-{
+void BrowserWindow::loadAddress(const QUrl &url) {
     if (weView()->webTab()->isPinned()) {
         int index = m_tabWidget->addView(url, qzSettings->newTabPosition);
         weView(index)->setFocus();
@@ -839,20 +813,17 @@ void BrowserWindow::loadAddress(const QUrl &url)
     }
 }
 
-void BrowserWindow::showHistoryManager()
-{
+void BrowserWindow::showHistoryManager() {
     mApp->browsingLibrary()->showHistory(this);
 }
 
-void BrowserWindow::showSource(WebView *view)
-{
+void BrowserWindow::showSource(WebView *view) {
     if (!view)
         view = weView();
     view->showSource();
 }
 
-SideBar* BrowserWindow::addSideBar()
-{
+SideBar *BrowserWindow::addSideBar() {
     if (m_sideBar) {
         return m_sideBar.data();
     }
@@ -876,8 +847,7 @@ SideBar* BrowserWindow::addSideBar()
     return m_sideBar.data();
 }
 
-void BrowserWindow::saveSideBarSettings()
-{
+void BrowserWindow::saveSideBarSettings() {
     if (m_sideBar) {
         // That +1 is important here, without it, the sidebar width would
         // decrease by 1 pixel every close
@@ -888,8 +858,7 @@ void BrowserWindow::saveSideBarSettings()
     Settings().setValue(QSL("Browser-View-Settings/SideBar"), m_sideBarManager->activeSideBar());
 }
 
-void BrowserWindow::toggleShowMenubar()
-{
+void BrowserWindow::toggleShowMenubar() {
 #ifdef Q_OS_MACOS
     // We use one shared global menubar on Mac that can't be hidden
     return;
@@ -910,8 +879,7 @@ void BrowserWindow::toggleShowMenubar()
     }
 }
 
-void BrowserWindow::toggleShowStatusBar()
-{
+void BrowserWindow::toggleShowStatusBar() {
     setUpdatesEnabled(false);
 
     m_statusBar->setVisible(!m_statusBar->isVisible());
@@ -919,11 +887,9 @@ void BrowserWindow::toggleShowStatusBar()
     setUpdatesEnabled(true);
 
     Settings().setValue(QSL("Browser-View-Settings/showStatusBar"), m_statusBar->isVisible());
-
 }
 
-void BrowserWindow::toggleShowBookmarksToolbar()
-{
+void BrowserWindow::toggleShowBookmarksToolbar() {
     setUpdatesEnabled(false);
 
     m_bookmarksToolbar->setVisible(!m_bookmarksToolbar->isVisible());
@@ -934,8 +900,7 @@ void BrowserWindow::toggleShowBookmarksToolbar()
     Settings().setValue(QSL("Browser-View-Settings/instantBookmarksToolbar"), false);
 }
 
-void BrowserWindow::toggleShowNavigationToolbar()
-{
+void BrowserWindow::toggleShowNavigationToolbar() {
     setUpdatesEnabled(false);
 
     m_navigationToolbar->setVisible(!m_navigationToolbar->isVisible());
@@ -952,14 +917,12 @@ void BrowserWindow::toggleShowNavigationToolbar()
 #endif
 }
 
-void BrowserWindow::toggleTabsOnTop(bool enable)
-{
+void BrowserWindow::toggleTabsOnTop(bool enable) {
     qzSettings->tabsOnTop = enable;
     m_navigationContainer->toggleTabsOnTop(enable);
 }
 
-void BrowserWindow::toggleFullScreen()
-{
+void BrowserWindow::toggleFullScreen() {
     if (m_htmlFullScreenView) {
         weView()->triggerPageAction(QWebEnginePage::ExitFullScreen);
         return;
@@ -972,8 +935,7 @@ void BrowserWindow::toggleFullScreen()
     }
 }
 
-void BrowserWindow::requestHtmlFullScreen(TabbedWebView *view, bool enable)
-{
+void BrowserWindow::requestHtmlFullScreen(TabbedWebView *view, bool enable) {
     if (enable) {
         setWindowState(windowState() | Qt::WindowFullScreen);
     } else {
@@ -986,23 +948,20 @@ void BrowserWindow::requestHtmlFullScreen(TabbedWebView *view, bool enable)
     m_htmlFullScreenView = enable ? view : nullptr;
 }
 
-void BrowserWindow::showWebInspector()
-{
+void BrowserWindow::showWebInspector() {
     if (weView() && weView()->webTab()) {
         weView()->webTab()->showWebInspector();
     }
 }
 
-void BrowserWindow::toggleWebInspector()
-{
+void BrowserWindow::toggleWebInspector() {
     if (weView() && weView()->webTab()) {
         weView()->webTab()->toggleWebInspector();
     }
 }
 
-void BrowserWindow::currentTabChanged()
-{
-    TabbedWebView* view = weView();
+void BrowserWindow::currentTabChanged() {
+    TabbedWebView *view = weView();
     m_navigationToolbar->setCurrentView(view);
 
     if (!view) {
@@ -1010,11 +969,13 @@ void BrowserWindow::currentTabChanged()
     }
 
     const QString title = view->webTab()->title(/*allowEmpty*/true);
+
     if (title.isEmpty()) {
-        setWindowTitle(tr("browser:e8y6"));
+        setWindowTitle(QSL("browser:e8y6"));
     } else {
-        setWindowTitle(tr("%1 - browser:e8y6").arg(title));
+        setWindowTitle(QSL("%1 — browser:e8y6").arg(title));
     }
+
     m_ipLabel->setText(view->getIp());
     view->setFocus();
 
@@ -1025,9 +986,8 @@ void BrowserWindow::currentTabChanged()
     setTabOrder(m_navigationToolbar->webSearchBar(), view);
 }
 
-void BrowserWindow::updateLoadingActions()
-{
-    TabbedWebView* view = weView();
+void BrowserWindow::updateLoadingActions() {
+    TabbedWebView *view = weView();
     if (!view) {
         return;
     }
@@ -1043,21 +1003,18 @@ void BrowserWindow::updateLoadingActions()
     if (isLoading) {
         m_progressBar->setValue(view->loadingProgress());
         m_navigationToolbar->showStopButton();
-    }
-    else {
+    } else {
         m_navigationToolbar->showReloadButton();
     }
 }
 
-void BrowserWindow::addDeleteOnCloseWidget(QWidget* widget)
-{
+void BrowserWindow::addDeleteOnCloseWidget(QWidget *widget) {
     if (!m_deleteOnCloseWidgets.contains(widget)) {
         m_deleteOnCloseWidgets.append(widget);
     }
 }
 
-void BrowserWindow::restoreWindow(const SavedWindow &window)
-{
+void BrowserWindow::restoreWindow(const SavedWindow &window) {
     restoreState(window.windowState);
     restoreGeometry(window.windowGeometry);
     restoreUiState(window.windowUiState);
@@ -1071,12 +1028,11 @@ void BrowserWindow::restoreWindow(const SavedWindow &window)
     updateStartupFocus();
 }
 
-void BrowserWindow::createToolbarsMenu(QMenu* menu)
-{
+void BrowserWindow::createToolbarsMenu(QMenu *menu) {
     removeActions(menu->actions());
     menu->clear();
 
-    QAction* action;
+    QAction *action;
 
 #ifndef Q_OS_MACOS
     action = menu->addAction(tr("&Menu Bar"), this, &BrowserWindow::toggleShowMenubar);
@@ -1101,13 +1057,11 @@ void BrowserWindow::createToolbarsMenu(QMenu* menu)
     addActions(menu->actions());
 }
 
-void BrowserWindow::createSidebarsMenu(QMenu* menu)
-{
+void BrowserWindow::createSidebarsMenu(QMenu *menu) {
     m_sideBarManager->createMenu(menu);
 }
 
-void BrowserWindow::createEncodingMenu(QMenu* menu)
-{
+void BrowserWindow::createEncodingMenu(QMenu *menu) {
     const QString activeCodecName = mApp->webSettings()->defaultTextEncoding();
 
     QStringList isoCodecs;
@@ -1119,7 +1073,7 @@ void BrowserWindow::createEncodingMenu(QMenu* menu)
     QStringList allCodecs;
 
     const auto codecs = QStringConverter::availableCodecs();
-    for (const auto &codecName : codecs) {
+    for (const auto &codecName: codecs) {
         if (!allCodecs.contains(codecName))
             allCodecs.append(codecName);
         else
@@ -1150,15 +1104,13 @@ void BrowserWindow::createEncodingMenu(QMenu* menu)
     createEncodingSubMenu(tr("Other"), otherCodecs, menu);
 }
 
-void BrowserWindow::removeActions(const QList<QAction *> &actions)
-{
-    for (QAction *action : actions) {
+void BrowserWindow::removeActions(const QList<QAction *> &actions) {
+    for (QAction *action: actions) {
         removeAction(action);
     }
 }
 
-void BrowserWindow::addTab()
-{
+void BrowserWindow::addTab() {
     m_tabWidget->addView(QUrl(), Qz::NT_SelectedNewEmptyTab, true);
     m_tabWidget->setCurrentTabFresh(true);
 
@@ -1166,14 +1118,12 @@ void BrowserWindow::addTab()
         showNavigationWithFullScreen();
 }
 
-void BrowserWindow::webSearch()
-{
+void BrowserWindow::webSearch() {
     m_navigationToolbar->webSearchBar()->setFocus();
     m_navigationToolbar->webSearchBar()->selectAll();
 }
 
-void BrowserWindow::searchOnPage()
-{
+void BrowserWindow::searchOnPage() {
     if (weView() && weView()->webTab()) {
         const QString searchText = weView()->page()->selectedText();
         if (!searchText.contains(QL1C('\n'))) {
@@ -1184,22 +1134,21 @@ void BrowserWindow::searchOnPage()
     }
 }
 
-void BrowserWindow::openFile()
-{
+void BrowserWindow::openFile() {
     const QString fileTypes = QSL("%1(*.html *.htm *.shtml *.shtm *.xhtml);;"
-                                      "%2(*.png *.jpg *.jpeg *.bmp *.gif *.svg *.tiff);;"
-                                      "%3(*.txt);;"
-                                      "%4(*.*)").arg(tr("HTML files"), tr("Image files"), tr("Text files"), tr("All files"));
+        "%2(*.png *.jpg *.jpeg *.bmp *.gif *.svg *.tiff);;"
+        "%3(*.txt);;"
+        "%4(*.*)").arg(tr("HTML files"), tr("Image files"), tr("Text files"), tr("All files"));
 
-    const QString filePath = QzTools::getOpenFileName(QSL("MainWindow-openFile"), this, tr("Open file..."), QDir::homePath(), fileTypes);
+    const QString filePath = QzTools::getOpenFileName(
+        QSL("MainWindow-openFile"), this, tr("Open file..."), QDir::homePath(), fileTypes);
 
     if (!filePath.isEmpty()) {
         loadAddress(QUrl::fromLocalFile(filePath));
     }
 }
 
-void BrowserWindow::openLocation()
-{
+void BrowserWindow::openLocation() {
     if (isFullScreen()) {
         showNavigationWithFullScreen();
     }
@@ -1208,13 +1157,11 @@ void BrowserWindow::openLocation()
     locationBar()->selectAll();
 }
 
-bool BrowserWindow::fullScreenNavigationVisible() const
-{
+bool BrowserWindow::fullScreenNavigationVisible() const {
     return m_navigationContainer->isVisible();
 }
 
-void BrowserWindow::showNavigationWithFullScreen()
-{
+void BrowserWindow::showNavigationWithFullScreen() {
     if (m_htmlFullScreenView)
         return;
 
@@ -1225,8 +1172,7 @@ void BrowserWindow::showNavigationWithFullScreen()
     m_navigationContainer->show();
 }
 
-void BrowserWindow::hideNavigationWithFullScreen()
-{
+void BrowserWindow::hideNavigationWithFullScreen() {
     if (m_tabWidget->isCurrentTabFresh())
         return;
 
@@ -1235,9 +1181,8 @@ void BrowserWindow::hideNavigationWithFullScreen()
     }
 }
 
-void BrowserWindow::hideNavigationSlot()
-{
-    TabbedWebView* view = weView();
+void BrowserWindow::hideNavigationSlot() {
+    TabbedWebView *view = weView();
     bool mouseInView = view && view->underMouse();
 
     if (isFullScreen() && mouseInView) {
@@ -1245,10 +1190,9 @@ void BrowserWindow::hideNavigationSlot()
     }
 }
 
-bool BrowserWindow::event(QEvent *event)
-{
+bool BrowserWindow::event(QEvent *event) {
     if (event->type() == QEvent::WindowStateChange) {
-        auto *e = static_cast<QWindowStateChangeEvent*>(event);
+        auto *e = static_cast<QWindowStateChangeEvent *>(event);
         if (!(e->oldState() & Qt::WindowFullScreen) && windowState() & Qt::WindowFullScreen) {
             // Enter fullscreen
             m_statusBarVisible = m_statusBar->isVisible();
@@ -1263,8 +1207,7 @@ bool BrowserWindow::event(QEvent *event)
 
             // Show main menu button since menubar is hidden
             m_navigationToolbar->setSuperMenuVisible(true);
-        }
-        else if (e->oldState() & Qt::WindowFullScreen && !(windowState() & Qt::WindowFullScreen)) {
+        } else if (e->oldState() & Qt::WindowFullScreen && !(windowState() & Qt::WindowFullScreen)) {
             // Leave fullscreen
             m_statusBar->setVisible(m_statusBarVisible);
 #ifndef Q_OS_MACOS
@@ -1285,179 +1228,177 @@ bool BrowserWindow::event(QEvent *event)
     return QMainWindow::event(event);
 }
 
-void BrowserWindow::resizeEvent(QResizeEvent* event)
-{
+void BrowserWindow::resizeEvent(QResizeEvent *event) {
     m_bookmarksToolbar->setMaximumWidth(width());
 
     QMainWindow::resizeEvent(event);
 }
 
-void BrowserWindow::keyPressEvent(QKeyEvent* event)
-{
+void BrowserWindow::keyPressEvent(QKeyEvent *event) {
     if (mApp->plugins()->processKeyPress(Qz::ON_BrowserWindow, this, event)) {
         return;
     }
 
     int number = -1;
-    TabbedWebView* view = weView();
+    TabbedWebView *view = weView();
 
     switch (event->key()) {
-    case Qt::Key_Back:
-        if (view) {
-            view->back();
+        case Qt::Key_Back:
+            if (view) {
+                view->back();
+                event->accept();
+            }
+            break;
+
+        case Qt::Key_Forward:
+            if (view) {
+                view->forward();
+                event->accept();
+            }
+            break;
+
+        case Qt::Key_Stop:
+            if (view) {
+                view->stop();
+                event->accept();
+            }
+            break;
+
+        case Qt::Key_Reload:
+        case Qt::Key_Refresh:
+            if (view) {
+                view->reload();
+                event->accept();
+            }
+            break;
+
+        case Qt::Key_HomePage:
+            goHome();
             event->accept();
-        }
-        break;
+            break;
 
-    case Qt::Key_Forward:
-        if (view) {
-            view->forward();
+        case Qt::Key_Favorites:
+            mApp->browsingLibrary()->showBookmarks(this);
             event->accept();
-        }
-        break;
+            break;
 
-    case Qt::Key_Stop:
-        if (view) {
-            view->stop();
+        case Qt::Key_Search:
+            searchOnPage();
             event->accept();
-        }
-        break;
+            break;
 
-    case Qt::Key_Reload:
-    case Qt::Key_Refresh:
-        if (view) {
-            view->reload();
+        case Qt::Key_F6:
+        case Qt::Key_OpenUrl:
+            openLocation();
             event->accept();
-        }
-        break;
+            break;
 
-    case Qt::Key_HomePage:
-        goHome();
-        event->accept();
-        break;
-
-    case Qt::Key_Favorites:
-        mApp->browsingLibrary()->showBookmarks(this);
-        event->accept();
-        break;
-
-    case Qt::Key_Search:
-        searchOnPage();
-        event->accept();
-        break;
-
-    case Qt::Key_F6:
-    case Qt::Key_OpenUrl:
-        openLocation();
-        event->accept();
-        break;
-
-    case Qt::Key_History:
-        showHistoryManager();
-        event->accept();
-        break;
-
-    case Qt::Key_AddFavorite:
-        bookmarkPage();
-        event->accept();
-        break;
-
-    case Qt::Key_Tools:
-        action(QSL("Standard/Preferences"))->trigger();
-        event->accept();
-        break;
-
-    case Qt::Key_Tab:
-        if (event->modifiers() == Qt::ControlModifier) {
-            static_cast<QObject*>(m_tabWidget)->event(event);
-        }
-        break;
-
-    case Qt::Key_Backtab:
-        if (event->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier)) {
-            static_cast<QObject*>(m_tabWidget)->event(event);
-        }
-        break;
-
-    case Qt::Key_PageDown:
-        if (event->modifiers() == Qt::ControlModifier) {
-            m_tabWidget->nextTab();
+        case Qt::Key_History:
+            showHistoryManager();
             event->accept();
-        }
-        break;
+            break;
 
-    case Qt::Key_PageUp:
-        if (event->modifiers() == Qt::ControlModifier) {
-            m_tabWidget->previousTab();
+        case Qt::Key_AddFavorite:
+            bookmarkPage();
             event->accept();
-        }
-        break;
+            break;
 
-    case Qt::Key_Equal:
-        if (view && event->modifiers() == Qt::ControlModifier) {
-            view->zoomIn();
+        case Qt::Key_Tools:
+            action(QSL("Standard/Preferences"))->trigger();
             event->accept();
-        }
-        break;
+            break;
 
-    case Qt::Key_I:
-        if (event->modifiers() == Qt::ControlModifier) {
-            action(QSL("Tools/SiteInfo"))->trigger();
-            event->accept();
-        }
-        break;
+        case Qt::Key_Tab:
+            if (event->modifiers() == Qt::ControlModifier) {
+                static_cast<QObject *>(m_tabWidget)->event(event);
+            }
+            break;
 
-    case Qt::Key_U:
-        if (event->modifiers() == Qt::ControlModifier) {
-            action(QSL("View/PageSource"))->trigger();
-            event->accept();
-        }
-        break;
+        case Qt::Key_Backtab:
+            if (event->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier)) {
+                static_cast<QObject *>(m_tabWidget)->event(event);
+            }
+            break;
 
-    case Qt::Key_F:
-        if (event->modifiers() == Qt::ControlModifier) {
-            action(QSL("Edit/Find"))->trigger();
-            event->accept();
-        }
-        break;
+        case Qt::Key_PageDown:
+            if (event->modifiers() == Qt::ControlModifier) {
+                m_tabWidget->nextTab();
+                event->accept();
+            }
+            break;
 
-    case Qt::Key_Slash:
-        if (m_useSingleKeyShortcuts) {
-            action(QSL("Edit/Find"))->trigger();
-            event->accept();
-        }
-        break;
+        case Qt::Key_PageUp:
+            if (event->modifiers() == Qt::ControlModifier) {
+                m_tabWidget->previousTab();
+                event->accept();
+            }
+            break;
 
-    case Qt::Key_1:
-        number = 1;
-        break;
-    case Qt::Key_2:
-        number = 2;
-        break;
-    case Qt::Key_3:
-        number = 3;
-        break;
-    case Qt::Key_4:
-        number = 4;
-        break;
-    case Qt::Key_5:
-        number = 5;
-        break;
-    case Qt::Key_6:
-        number = 6;
-        break;
-    case Qt::Key_7:
-        number = 7;
-        break;
-    case Qt::Key_8:
-        number = 8;
-        break;
-    case Qt::Key_9:
-        number = 9;
-        break;
+        case Qt::Key_Equal:
+            if (view && event->modifiers() == Qt::ControlModifier) {
+                view->zoomIn();
+                event->accept();
+            }
+            break;
 
-    default:
-        break;
+        case Qt::Key_I:
+            if (event->modifiers() == Qt::ControlModifier) {
+                action(QSL("Tools/SiteInfo"))->trigger();
+                event->accept();
+            }
+            break;
+
+        case Qt::Key_U:
+            if (event->modifiers() == Qt::ControlModifier) {
+                action(QSL("View/PageSource"))->trigger();
+                event->accept();
+            }
+            break;
+
+        case Qt::Key_F:
+            if (event->modifiers() == Qt::ControlModifier) {
+                action(QSL("Edit/Find"))->trigger();
+                event->accept();
+            }
+            break;
+
+        case Qt::Key_Slash:
+            if (m_useSingleKeyShortcuts) {
+                action(QSL("Edit/Find"))->trigger();
+                event->accept();
+            }
+            break;
+
+        case Qt::Key_1:
+            number = 1;
+            break;
+        case Qt::Key_2:
+            number = 2;
+            break;
+        case Qt::Key_3:
+            number = 3;
+            break;
+        case Qt::Key_4:
+            number = 4;
+            break;
+        case Qt::Key_5:
+            number = 5;
+            break;
+        case Qt::Key_6:
+            number = 6;
+            break;
+        case Qt::Key_7:
+            number = 7;
+            break;
+        case Qt::Key_8:
+            number = 8;
+            break;
+        case Qt::Key_9:
+            number = 9;
+            break;
+
+        default:
+            break;
     }
 
     if (number != -1) {
@@ -1469,14 +1410,14 @@ void BrowserWindow::keyPressEvent(QKeyEvent* event)
             event->accept();
             return;
         }
-        if (event->modifiers() & Qt::ControlModifier && m_useSpeedDialNumberShortcuts) {
+        /*if (event->modifiers() & Qt::ControlModifier && m_useSpeedDialNumberShortcuts) {
             const QUrl url = mApp->plugins()->speedDial()->urlForShortcut(number - 1);
             if (url.isValid()) {
                 loadAddress(url);
                 event->accept();
                 return;
             }
-        }
+        }*/
         if (event->modifiers() == Qt::NoModifier && m_useSingleKeyShortcuts) {
             if (number == 1)
                 m_tabWidget->previousTab();
@@ -1488,29 +1429,27 @@ void BrowserWindow::keyPressEvent(QKeyEvent* event)
     QMainWindow::keyPressEvent(event);
 }
 
-void BrowserWindow::keyReleaseEvent(QKeyEvent* event)
-{
+void BrowserWindow::keyReleaseEvent(QKeyEvent *event) {
     if (mApp->plugins()->processKeyRelease(Qz::ON_BrowserWindow, this, event)) {
         return;
     }
 
     switch (event->key()) {
-    case Qt::Key_F:
-        if (event->modifiers() == Qt::ControlModifier) {
-            action(QSL("Edit/Find"))->trigger();
-            event->accept();
-        }
-        break;
+        case Qt::Key_F:
+            if (event->modifiers() == Qt::ControlModifier) {
+                action(QSL("Edit/Find"))->trigger();
+                event->accept();
+            }
+            break;
 
-    default:
-        break;
+        default:
+            break;
     }
 
     QMainWindow::keyReleaseEvent(event);
 }
 
-void BrowserWindow::closeEvent(QCloseEvent* event)
-{
+void BrowserWindow::closeEvent(QCloseEvent *event) {
     if (mApp->isClosing()) {
         saveSettings();
         return;
@@ -1519,7 +1458,8 @@ void BrowserWindow::closeEvent(QCloseEvent* event)
     Settings settings;
     bool askOnClose = settings.value(QSL("Browser-Tabs-Settings/AskOnClosing"), true).toBool();
 
-    if ((mApp->afterLaunch() == MainApplication::SelectSession || mApp->afterLaunch() == MainApplication::RestoreSession) && mApp->windowCount() == 1) {
+    if ((mApp->afterLaunch() == MainApplication::SelectSession || mApp->afterLaunch() ==
+         MainApplication::RestoreSession) && mApp->windowCount() == 1) {
         askOnClose = false;
     }
 
@@ -1528,7 +1468,9 @@ void BrowserWindow::closeEvent(QCloseEvent* event)
         dialog.setDefaultButton(QMessageBox::No);
         //~ singular There is still %n open tab and your session won't be stored.\nAre you sure you want to close this window?
         //~ plural There are still %n open tabs and your session won't be stored.\nAre you sure you want to close this window?
-        dialog.setText(tr("There are still %n open tabs and your session won't be stored.\nAre you sure you want to close this window?", "", m_tabWidget->count()));
+        dialog.setText(tr(
+            "There are still %n open tabs and your session won't be stored.\nAre you sure you want to close this window?",
+            "", m_tabWidget->count()));
         dialog.setCheckBoxText(tr("Don't ask again"));
         dialog.setWindowTitle(tr("There are still open tabs"));
         dialog.setIcon(QMessageBox::Warning);
@@ -1548,16 +1490,15 @@ void BrowserWindow::closeEvent(QCloseEvent* event)
     saveSettings();
     mApp->closedWindowsManager()->saveWindow(this);
 
-    #ifndef Q_OS_MACOS
-        if (mApp->windowCount() == 1)
-            mApp->quitApplication();
-    #endif
+#ifndef Q_OS_MACOS
+    if (mApp->windowCount() == 1)
+        mApp->quitApplication();
+#endif
 
     event->accept();
 }
 
-void BrowserWindow::closeWindow()
-{
+void BrowserWindow::closeWindow() {
 #ifdef Q_OS_MACOS
     close();
     return;
@@ -1568,8 +1509,7 @@ void BrowserWindow::closeWindow()
     }
 }
 
-void BrowserWindow::saveSettings()
-{
+void BrowserWindow::saveSettings() {
     if (mApp->isPrivate()) {
         return;
     }
@@ -1586,8 +1526,7 @@ void BrowserWindow::saveSettings()
     settings.endGroup();
 }
 
-void BrowserWindow::closeTab()
-{
+void BrowserWindow::closeTab() {
     // Don't close pinned tabs with keyboard shortcuts (Ctrl+W, Ctrl+F4)
     if (weView() && !weView()->webTab()->isPinned()) {
         m_tabWidget->requestCloseTab();
@@ -1595,16 +1534,14 @@ void BrowserWindow::closeTab()
 }
 
 #ifdef QZ_WS_X11
-static xcb_connection_t *getXcbConnection()
-{
+static xcb_connection_t *getXcbConnection() {
     const QNativeInterface::QX11Application *x11App = qApp->nativeInterface<QNativeInterface::QX11Application>();
     if (x11App == nullptr)
         return nullptr;
     return x11App->connection();
 }
 
-int BrowserWindow::getCurrentVirtualDesktop() const
-{
+int BrowserWindow::getCurrentVirtualDesktop() const {
     if (QGuiApplication::platformName() != QL1S("xcb"))
         return 0;
 
@@ -1633,7 +1570,7 @@ int BrowserWindow::getCurrentVirtualDesktop() const
     if (!reply || reply->type != XCB_ATOM_CARDINAL || reply->value_len != 1 || reply->format != sizeof(uint32_t) * 8)
         goto error;
 
-    value = *reinterpret_cast<uint32_t*>(xcb_get_property_value(reply));
+    value = *reinterpret_cast<uint32_t *>(xcb_get_property_value(reply));
 
     free(reply);
     free(atom_reply);
@@ -1645,8 +1582,7 @@ error:
     return 0;
 }
 
-void BrowserWindow::moveToVirtualDesktop(int desktopId)
-{
+void BrowserWindow::moveToVirtualDesktop(int desktopId) {
     if (QGuiApplication::platformName() != QL1S("xcb"))
         return;
 
@@ -1671,7 +1607,7 @@ void BrowserWindow::moveToVirtualDesktop(int desktopId)
     atom = atom_reply->atom;
 
     xcb_change_property(connection, XCB_PROP_MODE_REPLACE, winId(), atom,
-                        XCB_ATOM_CARDINAL, 32, 1, (const void*) &desktopId);
+                        XCB_ATOM_CARDINAL, 32, 1, (const void *) &desktopId);
 
 error:
     free(atom_reply);

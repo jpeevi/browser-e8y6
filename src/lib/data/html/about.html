@@ -1,50 +1,203 @@
-<html><head>
-<meta http-equiv="content-type" content="text/html; charset=utf-8">
-<title>%TITLE%</title>
-<style>
-html {font-family: sans-serif;}
-html * {font-size: 100%;line-height: 1.6;}
-#box {max-width:700px;min-width:400px;overflow:auto;margin: 25px auto 10px auto;padding: 10px 40px;text-align: %LEFT_STR%;}
-h1 {font-size: 160%;margin-bottom: 0px;}
-h2 {margin: 5px 0px;font-size: 100%;font-weight: bold;}
-dl {margin-top: 0px;}
-dt {display: block;float: %LEFT_STR%;min-width: 24%;margin: 0 0 0.3em 1%}
-dd {margin: 0 0 0.3em 28%;}
-p {margin-%LEFT_STR%: 1%;}
-.about-img {float: %RIGHT_STR%;margin-top:10px;width:300px;}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <title>%TITLE%</title>
 
-@media (prefers-color-scheme: light) {
-  html {background: #dddddd;color: #525c66;}
-  #box {background: #ffffff;}
-  h1 {color: #1a4ba4;}
-  dd {color: black;}
-  .dark {display: none;}
-}
-@media (prefers-color-scheme: dark) {
-  html {background: #070709;color: #dddddd;}
-  #box {background: #171717;}
-  h1 {color: #0078d7;}
-  dd {color: white;}
-  .light {display: none;}
-}
-</style>
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: "DejaVu Sans", sans-serif;
+            background: #303030;
+            color: #eeeeee;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 32px 20px;
+            line-height: 1.6;
+        }
+
+        #box {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 36px;
+            background: #383838;
+            border: 1px solid #484848;
+            border-radius: 12px;
+            overflow-wrap: anywhere;
+            direction:% DIRECTION%;
+            text-align:% LEFT_STR%;
+        }
+
+        .branding {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 32px;
+            padding-bottom: 28px;
+            margin-bottom: 28px;
+            border-bottom: 1px solid #505050;
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .falkon-logo {
+            max-width: 260px;
+            width: 100%;
+            height: 110px;
+            object-fit: contain;
+        }
+
+        .browser-logo {
+            width: 110px;
+            height: 110px;
+            object-fit: contain;
+        }
+
+        .brand-label {
+            font-size: 13px;
+            color: #bbbbbb;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            color: #ffffff;
+            font-size: 26px;
+        }
+
+        h2 {
+            margin: 20px 0 12px;
+            font-size: 16px;
+            color: #eeeeee;
+        }
+
+        h3 {
+            margin-top: 28px;
+            font-size: 15px;
+        }
+
+        dl {
+            margin-top: 12px;
+        }
+
+        dt {
+            float:% LEFT_STR%;
+            width: 28%;
+            margin-bottom: 8px;
+            color: #bbbbbb;
+        }
+
+        dd {
+            margin: 0 0 8px 30%;
+            color: #ffffff;
+            overflow-wrap: anywhere;
+        }
+
+        p {
+            margin-
+
+        % LEFT_STR %: 1 %;
+        }
+
+        a {
+            color: #9fc9ff;
+        }
+
+        pre {
+            padding: 20px;
+            border-radius: 8px;
+            background: #303030;
+            overflow-x: auto;
+            color: #cccccc;
+            font-family: "DejaVu Sans Mono", monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        @media (max-width: 600px) {
+            #box {
+                padding: 20px;
+            }
+
+            .branding {
+                gap: 12px;
+            }
+
+            .falkon-logo {
+                height: 75px;
+            }
+
+            .browser-logo {
+                width: 75px;
+                height: 75px;
+            }
+
+            dt {
+                float: none;
+                width: 100%;
+            }
+
+            dd {
+                margin-left: 0;
+            }
+        }
+    </style>
 </head>
+
 <body>
-  <div id="box">
-  <img src="%ABOUT-IMG%" class="about-img light">
-  <img src="%ABOUT-IMG-DARK%" class="about-img dark">
-<h1>%ABOUT-FALKON%</h1>
-<h2>%INFORMATIONS-ABOUT-VERSION%</h2>
- <dl>
-  %VERSION-INFO%
- </dl>
+<div id="box">
 
-<h3>%MAIN-DEVELOPER%</h3>
-<p>%MAIN-DEVELOPER-TEXT%</p>
-<h2>%COPYRIGHT%</h2>
-<pre>
-%COPYRIGHT-INCLUDE%
-</pre>
+    <div class="branding">
+        <div class="brand">
+            <img
+                    alt="Falkon"
+                    class="falkon-logo"
+                    src="%ABOUT-IMG%"
+            >
+            <span class="brand-label">Falkon</span>
+        </div>
 
-  </div>
-</body></html>
+        <div class="brand">
+            <img
+                    alt="browser:e8y6"
+                    class="browser-logo"
+                    src="%BROWSER-LOGO%"
+            >
+            <span class="brand-label">browser:e8y6</span>
+        </div>
+    </div>
+
+    <h1>About browser:e8y6</h1>
+
+    <h2>%INFORMATIONS-ABOUT-VERSION%</h2>
+
+    <dl>
+        %VERSION-INFO%
+    </dl>
+
+    <h3>%MAIN-DEVELOPER%</h3>
+    <p>%MAIN-DEVELOPER-TEXT%</p>
+
+    <h2>%COPYRIGHT%</h2>
+
+    <pre>%COPYRIGHT-INCLUDE%</pre>
+
+</div>
+</body>
+</html>

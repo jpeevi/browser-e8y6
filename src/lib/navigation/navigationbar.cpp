@@ -75,6 +75,9 @@ NavigationBar::NavigationBar(BrowserWindow* window)
 
     m_buttonBack = new ToolButton(this);
     m_buttonBack->setObjectName("navigation-button-back");
+    m_buttonBack->setFallbackIcon(
+        style()->standardIcon(QStyle::SP_ArrowBack)
+    );
     m_buttonBack->setToolTip(tr("Back"));
     m_buttonBack->setToolButtonStyle(Qt::ToolButtonIconOnly);
     m_buttonBack->setToolbarButtonLook(true);
@@ -85,6 +88,9 @@ NavigationBar::NavigationBar(BrowserWindow* window)
 
     m_buttonForward = new ToolButton(this);
     m_buttonForward->setObjectName("navigation-button-next");
+    m_buttonForward->setFallbackIcon(
+        style()->standardIcon(QStyle::SP_ArrowForward)
+    );
     m_buttonForward->setToolTip(tr("Forward"));
     m_buttonForward->setToolButtonStyle(Qt::ToolButtonIconOnly);
     m_buttonForward->setToolbarButtonLook(true);
@@ -105,6 +111,9 @@ NavigationBar::NavigationBar(BrowserWindow* window)
 
     auto *buttonHome = new ToolButton(this);
     buttonHome->setObjectName("navigation-button-home");
+    buttonHome->setFallbackIcon(
+        style()->standardIcon(QStyle::SP_DirHomeIcon)
+    );
     buttonHome->setToolTip(tr("Home"));
     buttonHome->setToolButtonStyle(Qt::ToolButtonIconOnly);
     buttonHome->setToolbarButtonLook(true);
@@ -113,6 +122,22 @@ NavigationBar::NavigationBar(BrowserWindow* window)
 
     auto *buttonAddTab = new ToolButton(this);
     buttonAddTab->setObjectName("navigation-button-addtab");
+
+    // browser:e8y6 - fallback icon for New Tab.
+    buttonAddTab->setFallbackIcon(
+        QIcon::fromTheme(
+            QSL("list-add"),
+            style()->standardIcon(QStyle::SP_FileIcon)
+        )
+    );
+
+    buttonAddTab->setFallbackIcon(
+        QIcon::fromTheme(
+            QSL("tab-new"),
+            style()->standardIcon(QStyle::SP_FileIcon)
+        )
+    );
+
     buttonAddTab->setToolTip(tr("New Tab"));
     buttonAddTab->setToolButtonStyle(Qt::ToolButtonIconOnly);
     buttonAddTab->setToolbarButtonLook(true);
@@ -131,6 +156,14 @@ NavigationBar::NavigationBar(BrowserWindow* window)
 
     auto *buttonTools = new ToolButton(this);
     buttonTools->setObjectName("navigation-button-tools");
+
+    buttonTools->setFallbackIcon(
+        QIcon::fromTheme(
+            QSL("configure"),
+            style()->standardIcon(QStyle::SP_FileDialogDetailedView)
+        )
+    );
+
     buttonTools->setPopupMode(QToolButton::InstantPopup);
     buttonTools->setToolbarButtonLook(true);
     buttonTools->setToolTip(tr("Tools"));
@@ -144,6 +177,14 @@ NavigationBar::NavigationBar(BrowserWindow* window)
 
     m_supMenu = new ToolButton(this);
     m_supMenu->setObjectName("navigation-button-supermenu");
+
+    m_supMenu->setFallbackIcon(
+        QIcon::fromTheme(
+            QSL("application-menu"),
+            style()->standardIcon(QStyle::SP_TitleBarMenuButton)
+        )
+    );
+
     m_supMenu->setPopupMode(QToolButton::InstantPopup);
     m_supMenu->setToolbarButtonLook(true);
     m_supMenu->setToolTip(tr("Main Menu"));

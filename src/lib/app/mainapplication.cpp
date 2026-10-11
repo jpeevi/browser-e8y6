@@ -15,6 +15,7 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 * ============================================================ */
+
 #include "mainapplication.h"
 #include "history.h"
 #include "qztools.h"
@@ -73,6 +74,9 @@
 
 #include <QWebEngineNotification>
 #include <QWebEngineUrlScheme>
+#include <QFileInfo>
+#include <QStringList>
+#include <QCoreApplication>
 
 #if QTWEBENGINECORE_VERSION >= QT_VERSION_CHECK(6, 9, 0)
 #include <QWebEngineProfileBuilder>
@@ -90,31 +94,31 @@
 
 static bool s_testMode = false;
 
-MainApplication::MainApplication(int &argc, char** argv)
+MainApplication::MainApplication(int &argc, char **argv)
     : QtSingleApplication(argc, argv)
-    , m_isPrivate(false)
-    , m_isPortable(false)
-    , m_isClosing(false)
-    , m_isStartingAfterCrash(false)
-    , m_history(nullptr)
-    , m_bookmarks(nullptr)
-    , m_autoFill(nullptr)
-    , m_cookieJar(nullptr)
-    , m_plugins(nullptr)
-    , m_browsingLibrary(nullptr)
-    , m_networkManager(nullptr)
-    , m_restoreManager(nullptr)
-    , m_sessionManager(nullptr)
-    , m_downloadManager(nullptr)
-    , m_userAgentManager(nullptr)
-    , m_searchEnginesManager(nullptr)
-    , m_closedWindowsManager(nullptr)
-    , m_protocolHandlerManager(nullptr)
-    , m_html5PermissionsManager(nullptr)
-    , m_siteSettingsManager(nullptr)
-    , m_desktopNotifications(nullptr)
-    , m_webProfile(nullptr)
-    , m_autoSaver(nullptr)
+      , m_isPrivate(false)
+      , m_isPortable(false)
+      , m_isClosing(false)
+      , m_isStartingAfterCrash(false)
+      , m_history(nullptr)
+      , m_bookmarks(nullptr)
+      , m_autoFill(nullptr)
+      , m_cookieJar(nullptr)
+      , m_plugins(nullptr)
+      , m_browsingLibrary(nullptr)
+      , m_networkManager(nullptr)
+      , m_restoreManager(nullptr)
+      , m_sessionManager(nullptr)
+      , m_downloadManager(nullptr)
+      , m_userAgentManager(nullptr)
+      , m_searchEnginesManager(nullptr)
+      , m_closedWindowsManager(nullptr)
+      , m_protocolHandlerManager(nullptr)
+      , m_html5PermissionsManager(nullptr)
+      , m_siteSettingsManager(nullptr)
+      , m_desktopNotifications(nullptr)
+      , m_webProfile(nullptr)
+      , m_autoSaver(nullptr)
 #if defined(Q_OS_WIN) && !defined(Q_OS_OS2)
     , m_registerQAppAssociation(0)
 #endif
@@ -122,12 +126,20 @@ MainApplication::MainApplication(int &argc, char** argv)
     setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
 
     setApplicationDisplayName(QStringLiteral("browser:e8y6"));
+    // browser:e8y6 - restore themed icons for toolbar and menus.
+#if defined(Q_OS_UNIX) && !defined(Q_OS_MACOS)
+    if (QIcon::themeName().isEmpty()) {
+        QIcon::setThemeName(QSL("breeze"));
+    }
+    QIcon::setFallbackThemeName(QSL("breeze"));
+#endif
     setOrganizationDomain(QStringLiteral("org.kde"));
 #if defined(Q_OS_WIN)
     QIcon::setFallbackThemeName(QStringLiteral("breeze"));
     setStyle(QStringLiteral("breeze"));
 #endif
-    const QString iconPath = QDir(applicationDirPath()).absoluteFilePath(QSL("../share/icons/hicolor/256x256/apps/browser-e8y6.png"));
+    const QString iconPath = QDir(applicationDirPath()).absoluteFilePath(
+        QSL("../share/icons/hicolor/256x256/apps/browser-e8y6.png"));
     setWindowIcon(QIcon::fromTheme(QSL("browser-e8y6"), QIcon(iconPath)));
     setDesktopFileName(QSL("org.kde.falkon"));
 
@@ -144,7 +156,9 @@ MainApplication::MainApplication(int &argc, char** argv)
 
     // QSQLITE database plugin is required
     if (!QSqlDatabase::isDriverAvailable(QSL("QSQLITE"))) {
-        QMessageBox::critical(nullptr, QSL("Error"), QSL("Qt SQLite database plugin is not available. Please install it and restart the application."));
+        QMessageBox::critical(nullptr, QSL("Error"),
+                              QSL(
+                                  "Qt SQLite database plugin is not available. Please install it and restart the application."));
         m_isClosing = true;
         return;
     }
@@ -169,58 +183,58 @@ MainApplication::MainApplication(int &argc, char** argv)
     if (argc > 1) {
         CommandLineOptions cmd;
         const auto actions = cmd.getActions();
-        for (const CommandLineOptions::ActionPair &pair : actions) {
+        for (const CommandLineOptions::ActionPair &pair: actions) {
             switch (pair.action) {
-            case Qz::CL_StartWithoutAddons:
-                noAddons = true;
-                break;
-            case Qz::CL_StartWithProfile:
-                startProfile = pair.text;
-                break;
-            case Qz::CL_StartPortable:
-                m_isPortable = true;
-                break;
-            case Qz::CL_NewTab:
-                messages.append(QStringLiteral("ACTION:NewTab"));
-                m_postLaunchActions.append(OpenNewTab);
-                break;
-            case Qz::CL_NewWindow:
-                messages.append(QStringLiteral("ACTION:NewWindow"));
-                break;
-            case Qz::CL_ToggleFullScreen:
-                messages.append(QStringLiteral("ACTION:ToggleFullScreen"));
-                m_postLaunchActions.append(ToggleFullScreen);
-                break;
-            case Qz::CL_ShowDownloadManager:
-                messages.append(QStringLiteral("ACTION:ShowDownloadManager"));
-                m_postLaunchActions.append(OpenDownloadManager);
-                break;
-            case Qz::CL_StartPrivateBrowsing:
-                m_isPrivate = true;
-                break;
-            case Qz::CL_StartNewInstance:
-                newInstance = true;
-                break;
-            case Qz::CL_OpenUrlInCurrentTab:
-                startUrls.append(QUrl::fromUserInput(pair.text));
-                messages.append(QSL("ACTION:OpenUrlInCurrentTab") + pair.text);
-                break;
-            case Qz::CL_OpenUrlInNewWindow:
-                startUrls.append(QUrl::fromUserInput(pair.text));
-                messages.append(QSL("ACTION:OpenUrlInNewWindow") + pair.text);
-                break;
-            case Qz::CL_OpenUrl:
-                startUrls.append(QUrl::fromUserInput(pair.text));
-                messages.append(QSL("URL:") + pair.text);
-                break;
-            case Qz::CL_ExitAction:
-                m_isClosing = true;
-                return;
-            case Qz::CL_WMClass:
-                m_wmClass = pair.text.toUtf8();
-                break;
-            default:
-                break;
+                case Qz::CL_StartWithoutAddons:
+                    noAddons = true;
+                    break;
+                case Qz::CL_StartWithProfile:
+                    startProfile = pair.text;
+                    break;
+                case Qz::CL_StartPortable:
+                    m_isPortable = true;
+                    break;
+                case Qz::CL_NewTab:
+                    messages.append(QStringLiteral("ACTION:NewTab"));
+                    m_postLaunchActions.append(OpenNewTab);
+                    break;
+                case Qz::CL_NewWindow:
+                    messages.append(QStringLiteral("ACTION:NewWindow"));
+                    break;
+                case Qz::CL_ToggleFullScreen:
+                    messages.append(QStringLiteral("ACTION:ToggleFullScreen"));
+                    m_postLaunchActions.append(ToggleFullScreen);
+                    break;
+                case Qz::CL_ShowDownloadManager:
+                    messages.append(QStringLiteral("ACTION:ShowDownloadManager"));
+                    m_postLaunchActions.append(OpenDownloadManager);
+                    break;
+                case Qz::CL_StartPrivateBrowsing:
+                    m_isPrivate = true;
+                    break;
+                case Qz::CL_StartNewInstance:
+                    newInstance = true;
+                    break;
+                case Qz::CL_OpenUrlInCurrentTab:
+                    startUrls.append(QUrl::fromUserInput(pair.text));
+                    messages.append(QSL("ACTION:OpenUrlInCurrentTab") + pair.text);
+                    break;
+                case Qz::CL_OpenUrlInNewWindow:
+                    startUrls.append(QUrl::fromUserInput(pair.text));
+                    messages.append(QSL("ACTION:OpenUrlInNewWindow") + pair.text);
+                    break;
+                case Qz::CL_OpenUrl:
+                    startUrls.append(QUrl::fromUserInput(pair.text));
+                    messages.append(QSL("URL:") + pair.text);
+                    break;
+                case Qz::CL_ExitAction:
+                    m_isClosing = true;
+                    return;
+                case Qz::CL_WMClass:
+                    m_wmClass = pair.text.toUtf8();
+                    break;
+                default:
+                    break;
             }
         }
     }
@@ -256,8 +270,7 @@ MainApplication::MainApplication(int &argc, char** argv)
         if (newInstance) {
             if (startProfile.isEmpty() || startProfile == QLatin1String("default")) {
                 std::cout << "New instance cannot be started with default profile!" << std::endl;
-            }
-            else {
+            } else {
                 // Generate unique appId so it is possible to start more separate instances
                 // of the same profile. It is dangerous to run more instances of the same profile,
                 // but if the user wants it, we should allow it.
@@ -275,7 +288,7 @@ MainApplication::MainApplication(int &argc, char** argv)
 
     if (isRunning()) {
         m_isClosing = true;
-        for (const QString &message : std::as_const(messages)) {
+        for (const QString &message: std::as_const(messages)) {
             sendMessage(message);
         }
         return;
@@ -310,8 +323,7 @@ MainApplication::MainApplication(int &argc, char** argv)
 #else
         m_webProfile = new QWebEngineProfile();
 #endif
-    }
-    else {
+    } else {
 #if QTWEBENGINECORE_VERSION >= QT_VERSION_CHECK(6, 9, 0)
         Settings settings;
         const bool allowCache = settings.value(QSL("Web-Browser-Settings/AllowLocalCache"), true).toBool();
@@ -326,7 +338,9 @@ MainApplication::MainApplication(int &argc, char** argv)
         QWebEngineProfileBuilder profileBuilder;
         profileBuilder.setPersistentStoragePath(DataPaths::currentProfilePath());
         profileBuilder.setCachePath(cachePath);
-        profileBuilder.setHttpCacheType(allowCache ? QWebEngineProfile::DiskHttpCache : QWebEngineProfile::MemoryHttpCache);
+        profileBuilder.setHttpCacheType(allowCache
+                                            ? QWebEngineProfile::DiskHttpCache
+                                            : QWebEngineProfile::MemoryHttpCache);
         profileBuilder.setHttpCacheMaximumSize(cacheSize);
         profileBuilder.setPersistentCookiesPolicy(QWebEngineProfile::AllowPersistentCookies);
         profileBuilder.setPersistentPermissionsPolicy(QWebEngineProfile::PersistentPermissionsPolicy::AskEveryTime);
@@ -345,7 +359,7 @@ MainApplication::MainApplication(int &argc, char** argv)
     }
     connect(m_webProfile, &QWebEngineProfile::downloadRequested, this, &MainApplication::downloadRequested);
 
-    m_webProfile->setNotificationPresenter([&] (std::unique_ptr<QWebEngineNotification> notification) {
+    m_webProfile->setNotificationPresenter([&](std::unique_ptr<QWebEngineNotification> notification) {
         auto notifications = desktopNotifications();
         notifications->showNotification(
             QPixmap::fromImage(notification->icon()), notification->title(), notification->message()
@@ -430,8 +444,7 @@ MainApplication::MainApplication(int &argc, char** argv)
     QTimer::singleShot(0, this, &MainApplication::postLaunch);
 }
 
-MainApplication::~MainApplication()
-{
+MainApplication::~MainApplication() {
     m_isClosing = true;
 
     QDesktopServices::unsetUrlHandler(QSL("http"));
@@ -455,29 +468,30 @@ MainApplication::~MainApplication()
     Settings::syncSettings();
 }
 
-void MainApplication::setChromiumFlags()
-{
+void MainApplication::setChromiumFlags() {
     QByteArray chromium_flags = qgetenv("QTWEBENGINE_CHROMIUM_FLAGS");
     chromium_flags.append(" --enable-features=WebRTCPipeWireCapturer");
 
     if (Settings::globalSettings()->value("Web-Browser-Settings/hardwareAccel", false).toBool()) {
-        chromium_flags.append(" --enable-oop-rasterization --enable-gpu-rasterization --enable-native-gpu-memory-buffers");
+        chromium_flags.append(
+            " --enable-oop-rasterization --enable-gpu-rasterization --enable-native-gpu-memory-buffers");
 #if QTWEBENGINECORE_VERSION < QT_VERSION_CHECK(6, 9, 0)
         chromium_flags.append(" --use-gl=desktop");
 #endif
     }
 
-    int prefferColorScheme = Settings::globalSettings()->value("Web-Browser-Settings/prefferColorScheme", Qz::ColorScheme_Auto).toInt();
-    if (   (prefferColorScheme == Qz::ColorScheme_Dark)
+    int prefferColorScheme = Settings::globalSettings()->value("Web-Browser-Settings/prefferColorScheme",
+                                                               Qz::ColorScheme_Auto).toInt();
+    if ((prefferColorScheme == Qz::ColorScheme_Dark)
 #if QTGUI_VERSION >= QT_VERSION_CHECK(6, 5, 0)
         || ((prefferColorScheme == Qz::ColorScheme_Auto) && (styleHints()->colorScheme() == Qt::ColorScheme::Dark))
 #endif
     ) {
         chromium_flags.append(" --blink-settings=preferredColorScheme=0");
-    }
-    else if ((prefferColorScheme == Qz::ColorScheme_Light)
+    } else if ((prefferColorScheme == Qz::ColorScheme_Light)
 #if QTGUI_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-        || ((prefferColorScheme == Qz::ColorScheme_Auto) && (styleHints()->colorScheme() == Qt::ColorScheme::Light))
+               || ((prefferColorScheme == Qz::ColorScheme_Auto) && (
+                       styleHints()->colorScheme() == Qt::ColorScheme::Light))
 #endif
     ) {
         chromium_flags.append(" --blink-settings=preferredColorScheme=1");
@@ -486,18 +500,15 @@ void MainApplication::setChromiumFlags()
     qputenv("QTWEBENGINE_CHROMIUM_FLAGS", chromium_flags);
 }
 
-bool MainApplication::isClosing() const
-{
+bool MainApplication::isClosing() const {
     return m_isClosing;
 }
 
-bool MainApplication::isPrivate() const
-{
+bool MainApplication::isPrivate() const {
     return m_isPrivate;
 }
 
-bool MainApplication::isPortable() const
-{
+bool MainApplication::isPortable() const {
 #ifdef PORTABLE_BUILD
     return true;
 #else
@@ -505,23 +516,19 @@ bool MainApplication::isPortable() const
 #endif
 }
 
-bool MainApplication::isStartingAfterCrash() const
-{
+bool MainApplication::isStartingAfterCrash() const {
     return m_isStartingAfterCrash;
 }
 
-int MainApplication::windowCount() const
-{
+int MainApplication::windowCount() const {
     return m_windows.count();
 }
 
-QList<BrowserWindow*> MainApplication::windows() const
-{
+QList<BrowserWindow *> MainApplication::windows() const {
     return m_windows;
 }
 
-BrowserWindow* MainApplication::getWindow() const
-{
+BrowserWindow *MainApplication::getWindow() const {
     if (m_lastActiveWindow) {
         return m_lastActiveWindow.data();
     }
@@ -529,13 +536,11 @@ BrowserWindow* MainApplication::getWindow() const
     return m_windows.isEmpty() ? nullptr : m_windows.at(0);
 }
 
-BrowserWindow* MainApplication::createWindow(Qz::BrowserWindowType type, const QUrl &startUrl)
-{
+BrowserWindow *MainApplication::createWindow(Qz::BrowserWindowType type, const QUrl &startUrl) {
     return createWindow(type, QList<QUrl>({startUrl}));
 }
 
-BrowserWindow* MainApplication::createWindow(Qz::BrowserWindowType type, const QList<QUrl> &startUrls)
-{
+BrowserWindow *MainApplication::createWindow(Qz::BrowserWindowType type, const QList<QUrl> &startUrls) {
     if (windowCount() == 0 && type != Qz::BW_MacFirstWindow) {
         type = Qz::BW_FirstAppWindow;
     }
@@ -547,13 +552,11 @@ BrowserWindow* MainApplication::createWindow(Qz::BrowserWindowType type, const Q
     return window;
 }
 
-MainApplication::AfterLaunch MainApplication::afterLaunch() const
-{
+MainApplication::AfterLaunch MainApplication::afterLaunch() const {
     return static_cast<AfterLaunch>(Settings().value(QSL("Web-URL-Settings/afterLaunch"), RestoreSession).toInt());
 }
 
-void MainApplication::openSession(BrowserWindow* window, RestoreData &restoreData)
-{
+void MainApplication::openSession(BrowserWindow *window, RestoreData &restoreData) {
     setOverrideCursor(Qt::BusyCursor);
 
     if (!window)
@@ -568,8 +571,8 @@ void MainApplication::openSession(BrowserWindow* window, RestoreData &restoreDat
     }
 
     const auto restoreWindows = restoreData.windows;
-    for (const BrowserWindow::SavedWindow &data : restoreWindows) {
-        BrowserWindow* window = createWindow(Qz::BW_OtherRestoredWindow);
+    for (const BrowserWindow::SavedWindow &data: restoreWindows) {
+        BrowserWindow *window = createWindow(Qz::BW_OtherRestoredWindow);
         window->restoreWindow(data);
     }
 
@@ -578,8 +581,7 @@ void MainApplication::openSession(BrowserWindow* window, RestoreData &restoreDat
     restoreOverrideCursor();
 }
 
-bool MainApplication::restoreSession(BrowserWindow* window, RestoreData restoreData)
-{
+bool MainApplication::restoreSession(BrowserWindow *window, RestoreData restoreData) {
     if (m_isPrivate || !restoreData.isValid()) {
         return false;
     }
@@ -592,8 +594,7 @@ bool MainApplication::restoreSession(BrowserWindow* window, RestoreData restoreD
     return true;
 }
 
-void MainApplication::destroyRestoreManager()
-{
+void MainApplication::destroyRestoreManager() {
     if (m_restoreManager && m_restoreManager->isValid()) {
         return;
     }
@@ -602,190 +603,162 @@ void MainApplication::destroyRestoreManager()
     m_restoreManager = nullptr;
 }
 
-void MainApplication::reloadSettings()
-{
+void MainApplication::reloadSettings() {
     loadSettings();
     Q_EMIT settingsReloaded();
 }
 
-QString MainApplication::styleName() const
-{
+QString MainApplication::styleName() const {
     return m_proxyStyle ? m_proxyStyle->name() : QString();
 }
 
-void MainApplication::setProxyStyle(ProxyStyle *style)
-{
+void MainApplication::setProxyStyle(ProxyStyle *style) {
     m_proxyStyle = style;
     setStyle(style);
 }
 
-QByteArray MainApplication::wmClass() const
-{
+QByteArray MainApplication::wmClass() const {
     return m_wmClass;
 }
 
-History* MainApplication::history()
-{
+History *MainApplication::history() {
     if (!m_history) {
         m_history = new History(this);
     }
     return m_history;
 }
 
-Bookmarks* MainApplication::bookmarks()
-{
+Bookmarks *MainApplication::bookmarks() {
     if (!m_bookmarks) {
         m_bookmarks = new Bookmarks(this);
     }
     return m_bookmarks;
 }
 
-AutoFill* MainApplication::autoFill()
-{
+AutoFill *MainApplication::autoFill() {
     return m_autoFill;
 }
 
-CookieJar* MainApplication::cookieJar()
-{
+CookieJar *MainApplication::cookieJar() {
     if (!m_cookieJar) {
         m_cookieJar = new CookieJar(this);
     }
     return m_cookieJar;
 }
 
-PluginProxy* MainApplication::plugins()
-{
+PluginProxy *MainApplication::plugins() {
     return m_plugins;
 }
 
-BrowsingLibrary* MainApplication::browsingLibrary()
-{
+BrowsingLibrary *MainApplication::browsingLibrary() {
     if (!m_browsingLibrary) {
         m_browsingLibrary = new BrowsingLibrary(getWindow());
     }
     return m_browsingLibrary;
 }
 
-NetworkManager *MainApplication::networkManager()
-{
+NetworkManager *MainApplication::networkManager() {
     return m_networkManager;
 }
 
-RestoreManager* MainApplication::restoreManager()
-{
+RestoreManager *MainApplication::restoreManager() {
     return m_restoreManager;
 }
 
-SessionManager* MainApplication::sessionManager()
-{
+SessionManager *MainApplication::sessionManager() {
     return m_sessionManager;
 }
 
-DownloadManager* MainApplication::downloadManager()
-{
+DownloadManager *MainApplication::downloadManager() {
     if (!m_downloadManager) {
         m_downloadManager = new DownloadManager();
     }
     return m_downloadManager;
 }
 
-UserAgentManager* MainApplication::userAgentManager()
-{
+UserAgentManager *MainApplication::userAgentManager() {
     if (!m_userAgentManager) {
         m_userAgentManager = new UserAgentManager(this);
     }
     return m_userAgentManager;
 }
 
-SearchEnginesManager* MainApplication::searchEnginesManager()
-{
+SearchEnginesManager *MainApplication::searchEnginesManager() {
     if (!m_searchEnginesManager) {
         m_searchEnginesManager = new SearchEnginesManager(this);
     }
     return m_searchEnginesManager;
 }
 
-ClosedWindowsManager* MainApplication::closedWindowsManager()
-{
+ClosedWindowsManager *MainApplication::closedWindowsManager() {
     if (!m_closedWindowsManager) {
         m_closedWindowsManager = new ClosedWindowsManager(this);
     }
     return m_closedWindowsManager;
 }
 
-ProtocolHandlerManager *MainApplication::protocolHandlerManager()
-{
+ProtocolHandlerManager *MainApplication::protocolHandlerManager() {
     if (!m_protocolHandlerManager) {
         m_protocolHandlerManager = new ProtocolHandlerManager(this);
     }
     return m_protocolHandlerManager;
 }
 
-HTML5PermissionsManager* MainApplication::html5PermissionsManager()
-{
+HTML5PermissionsManager *MainApplication::html5PermissionsManager() {
     if (!m_html5PermissionsManager) {
         m_html5PermissionsManager = new HTML5PermissionsManager(this);
     }
     return m_html5PermissionsManager;
 }
 
-SiteSettingsManager * MainApplication::siteSettingsManager()
-{
+SiteSettingsManager *MainApplication::siteSettingsManager() {
     if (!m_siteSettingsManager) {
         m_siteSettingsManager = new SiteSettingsManager(this);
     }
     return m_siteSettingsManager;
 }
 
-DesktopNotificationsFactory* MainApplication::desktopNotifications()
-{
+DesktopNotificationsFactory *MainApplication::desktopNotifications() {
     if (!m_desktopNotifications) {
         m_desktopNotifications = new DesktopNotificationsFactory(this);
     }
     return m_desktopNotifications;
 }
 
-QWebEngineProfile *MainApplication::webProfile() const
-{
+QWebEngineProfile *MainApplication::webProfile() const {
     return m_webProfile;
 }
 
-QWebEngineSettings *MainApplication::webSettings() const
-{
+QWebEngineSettings *MainApplication::webSettings() const {
     return m_webProfile->settings();
 }
 
 // static
-MainApplication* MainApplication::instance()
-{
-    return static_cast<MainApplication*>(QCoreApplication::instance());
+MainApplication *MainApplication::instance() {
+    return static_cast<MainApplication *>(QCoreApplication::instance());
 }
 
 // static
-bool MainApplication::isTestModeEnabled()
-{
+bool MainApplication::isTestModeEnabled() {
     return s_testMode;
 }
 
 // static
-void MainApplication::setTestModeEnabled(bool enabled)
-{
+void MainApplication::setTestModeEnabled(bool enabled) {
     s_testMode = enabled;
 }
 
-void MainApplication::addNewTab(const QUrl &url)
-{
-    BrowserWindow* window = getWindow();
+void MainApplication::addNewTab(const QUrl &url) {
+    BrowserWindow *window = getWindow();
 
     if (window) {
         window->tabWidget()->addView(url, url.isEmpty() ? Qz::NT_SelectedNewEmptyTab : Qz::NT_SelectedTabAtTheEnd);
     }
 }
 
-void MainApplication::startPrivateBrowsing(const QUrl &startUrl)
-{
+void MainApplication::startPrivateBrowsing(const QUrl &startUrl) {
     QUrl url = startUrl;
-    if (auto* act = qobject_cast<QAction*>(sender())) {
+    if (auto *act = qobject_cast<QAction *>(sender())) {
         url = act->data().toUrl();
     }
 
@@ -798,35 +771,32 @@ void MainApplication::startPrivateBrowsing(const QUrl &startUrl)
     }
 
     if (!QProcess::startDetached(applicationFilePath(), args)) {
-        qWarning() << "MainApplication: Cannot start new browser process for private browsing!" << applicationFilePath() << args;
+        qWarning() << "MainApplication: Cannot start new browser process for private browsing!" << applicationFilePath()
+                << args;
     }
 }
 
-void MainApplication::reloadUserStyleSheet()
-{
+void MainApplication::reloadUserStyleSheet() {
     const QString userCssFile = Settings().value(QSL("Web-Browser-Settings/userStyleSheet"), QString()).toString();
     setUserStyleSheet(userCssFile);
 }
 
-void MainApplication::restoreOverrideCursor()
-{
+void MainApplication::restoreOverrideCursor() {
     QApplication::restoreOverrideCursor();
 }
 
-void MainApplication::changeOccurred()
-{
+void MainApplication::changeOccurred() {
     if (m_autoSaver)
         m_autoSaver->changeOccurred();
 }
 
-void MainApplication::quitApplication()
-{
+void MainApplication::quitApplication() {
     if (m_downloadManager && !m_downloadManager->canClose()) {
         m_downloadManager->show();
         return;
     }
 
-    for (BrowserWindow *window : std::as_const(m_windows)) {
+    for (BrowserWindow *window: std::as_const(m_windows)) {
         Q_EMIT window->aboutToClose();
     }
 
@@ -836,7 +806,7 @@ void MainApplication::quitApplication()
 
     m_isClosing = true;
 
-    for (BrowserWindow *window : std::as_const(m_windows)) {
+    for (BrowserWindow *window: std::as_const(m_windows)) {
         window->close();
     }
 
@@ -852,8 +822,7 @@ void MainApplication::quitApplication()
     quit();
 }
 
-void MainApplication::postLaunch()
-{
+void MainApplication::postLaunch() {
     if (m_postLaunchActions.contains(OpenDownloadManager)) {
         downloadManager()->show();
     }
@@ -871,11 +840,10 @@ void MainApplication::postLaunch()
     QTimer::singleShot(5000, this, &MainApplication::runDeferredPostLaunchActions);
 }
 
-QByteArray MainApplication::saveState() const
-{
+QByteArray MainApplication::saveState() const {
     RestoreData restoreData;
     restoreData.windows.reserve(m_windows.count());
-    for (BrowserWindow *window : std::as_const(m_windows)) {
+    for (BrowserWindow *window: std::as_const(m_windows)) {
         restoreData.windows.append(BrowserWindow::SavedWindow(window));
     }
 
@@ -895,8 +863,7 @@ QByteArray MainApplication::saveState() const
     return data;
 }
 
-void MainApplication::saveSettings()
-{
+void MainApplication::saveSettings() {
     if (isPrivate()) {
         return;
     }
@@ -942,41 +909,33 @@ void MainApplication::saveSettings()
     sessionManager()->saveSettings();
 }
 
-void MainApplication::messageReceived(const QString &message)
-{
-    QWidget* actWin = getWindow();
+void MainApplication::messageReceived(const QString &message) {
+    QWidget *actWin = getWindow();
     QUrl actUrl;
 
     if (message.startsWith(QLatin1String("URL:"))) {
         const QUrl url = QUrl::fromUserInput(message.mid(4));
         addNewTab(url);
         actWin = getWindow();
-    }
-    else if (message.startsWith(QLatin1String("ACTION:"))) {
+    } else if (message.startsWith(QLatin1String("ACTION:"))) {
         const QString text = message.mid(7);
         if (text == QLatin1String("NewTab")) {
             addNewTab();
-        }
-        else if (text == QLatin1String("NewWindow")) {
+        } else if (text == QLatin1String("NewWindow")) {
             actWin = createWindow(Qz::BW_NewWindow);
-        }
-        else if (text == QLatin1String("ShowDownloadManager")) {
+        } else if (text == QLatin1String("ShowDownloadManager")) {
             downloadManager()->show();
             actWin = downloadManager();
-        }
-        else if (text == QLatin1String("ToggleFullScreen") && actWin) {
-            auto* qz = static_cast<BrowserWindow*>(actWin);
+        } else if (text == QLatin1String("ToggleFullScreen") && actWin) {
+            auto *qz = static_cast<BrowserWindow *>(actWin);
             qz->toggleFullScreen();
-        }
-        else if (text.startsWith(QLatin1String("OpenUrlInCurrentTab"))) {
+        } else if (text.startsWith(QLatin1String("OpenUrlInCurrentTab"))) {
             actUrl = QUrl::fromUserInput(text.mid(19));
-        }
-        else if (text.startsWith(QLatin1String("OpenUrlInNewWindow"))) {
+        } else if (text.startsWith(QLatin1String("OpenUrlInNewWindow"))) {
             createWindow(Qz::BW_NewWindow, QUrl::fromUserInput(text.mid(18)));
             return;
         }
-    }
-    else {
+    } else {
         // User attempted to start another instance, let's open a new window
         actWin = createWindow(Qz::BW_NewWindow);
     }
@@ -994,25 +953,23 @@ void MainApplication::messageReceived(const QString &message)
     actWin->activateWindow();
     actWin->setFocus();
 
-    auto* win = qobject_cast<BrowserWindow*>(actWin);
+    auto *win = qobject_cast<BrowserWindow *>(actWin);
 
     if (win && !actUrl.isEmpty()) {
         win->loadAddress(actUrl);
     }
 }
 
-void MainApplication::windowDestroyed(QObject* window)
-{
+void MainApplication::windowDestroyed(QObject *window) {
     // qobject_cast doesn't work because QObject::destroyed is emitted from destructor
     Q_ASSERT(static_cast<BrowserWindow*>(window));
     Q_ASSERT(m_windows.contains(static_cast<BrowserWindow*>(window)));
 
-    m_windows.removeOne(static_cast<BrowserWindow*>(window));
+    m_windows.removeOne(static_cast<BrowserWindow *>(window));
 }
 
-void MainApplication::onFocusChanged()
-{
-    auto* activeBrowserWindow = qobject_cast<BrowserWindow*>(activeWindow());
+void MainApplication::onFocusChanged() {
+    auto *activeBrowserWindow = qobject_cast<BrowserWindow *>(activeWindow());
 
     if (activeBrowserWindow) {
         m_lastActiveWindow = activeBrowserWindow;
@@ -1021,19 +978,16 @@ void MainApplication::onFocusChanged()
     }
 }
 
-void MainApplication::runDeferredPostLaunchActions()
-{
+void MainApplication::runDeferredPostLaunchActions() {
     checkDefaultWebBrowser();
     checkOptimizeDatabase();
 }
 
-void MainApplication::downloadRequested(QWebEngineDownloadRequest *download)
-{
+void MainApplication::downloadRequested(QWebEngineDownloadRequest *download) {
     downloadManager()->download(download);
 }
 
-void MainApplication::loadSettings()
-{
+void MainApplication::loadSettings() {
     Settings settings;
     settings.beginGroup(QSL("Themes"));
     QString activeTheme = settings.value(QSL("activeTheme"), DEFAULT_THEME_NAME).toString();
@@ -1041,38 +995,54 @@ void MainApplication::loadSettings()
 
     loadTheme(activeTheme);
 
-    QWebEngineSettings* webSettings = m_webProfile->settings();
+    QWebEngineSettings *webSettings = m_webProfile->settings();
 
     // Web browsing settings
     settings.beginGroup(QSL("Web-Browser-Settings"));
 
-    webSettings->setAttribute(QWebEngineSettings::LocalStorageEnabled, settings.value(QSL("HTML5StorageEnabled"), true).toBool());
+    webSettings->setAttribute(QWebEngineSettings::LocalStorageEnabled,
+                              settings.value(QSL("HTML5StorageEnabled"), true).toBool());
     webSettings->setAttribute(QWebEngineSettings::PluginsEnabled, settings.value(QSL("allowPlugins"), true).toBool());
-    webSettings->setAttribute(QWebEngineSettings::JavascriptEnabled, settings.value(QSL("allowJavaScript"), true).toBool());
-    webSettings->setAttribute(QWebEngineSettings::JavascriptCanOpenWindows, settings.value(QSL("allowJavaScriptOpenWindow"), false).toBool());
-    webSettings->setAttribute(QWebEngineSettings::JavascriptCanAccessClipboard, settings.value(QSL("allowJavaScriptAccessClipboard"), true).toBool());
-    webSettings->setAttribute(QWebEngineSettings::LinksIncludedInFocusChain, settings.value(QSL("IncludeLinkInFocusChain"), false).toBool());
-    webSettings->setAttribute(QWebEngineSettings::PrintElementBackgrounds, settings.value(QSL("PrintElementBackground"), true).toBool());
-    webSettings->setAttribute(QWebEngineSettings::SpatialNavigationEnabled, settings.value(QSL("SpatialNavigation"), false).toBool());
-    webSettings->setAttribute(QWebEngineSettings::ScrollAnimatorEnabled, settings.value(QSL("AnimateScrolling"), true).toBool());
+    webSettings->setAttribute(QWebEngineSettings::JavascriptEnabled,
+                              settings.value(QSL("allowJavaScript"), true).toBool());
+    webSettings->setAttribute(QWebEngineSettings::JavascriptCanOpenWindows,
+                              settings.value(QSL("allowJavaScriptOpenWindow"), false).toBool());
+    webSettings->setAttribute(QWebEngineSettings::JavascriptCanAccessClipboard,
+                              settings.value(QSL("allowJavaScriptAccessClipboard"), true).toBool());
+    webSettings->setAttribute(QWebEngineSettings::LinksIncludedInFocusChain,
+                              settings.value(QSL("IncludeLinkInFocusChain"), false).toBool());
+    webSettings->setAttribute(QWebEngineSettings::PrintElementBackgrounds,
+                              settings.value(QSL("PrintElementBackground"), true).toBool());
+    webSettings->setAttribute(QWebEngineSettings::SpatialNavigationEnabled,
+                              settings.value(QSL("SpatialNavigation"), false).toBool());
+    webSettings->setAttribute(QWebEngineSettings::ScrollAnimatorEnabled,
+                              settings.value(QSL("AnimateScrolling"), true).toBool());
     webSettings->setAttribute(QWebEngineSettings::HyperlinkAuditingEnabled, false);
     webSettings->setAttribute(QWebEngineSettings::FullScreenSupportEnabled, true);
     webSettings->setAttribute(QWebEngineSettings::LocalContentCanAccessRemoteUrls, true);
     webSettings->setAttribute(QWebEngineSettings::LocalContentCanAccessFileUrls, true);
     webSettings->setAttribute(QWebEngineSettings::FocusOnNavigationEnabled, false);
 
-    webSettings->setAttribute(QWebEngineSettings::AllowWindowActivationFromJavaScript, settings.value(QSL("allowJavaScriptActivateWindow"), false).toBool());
+    webSettings->setAttribute(QWebEngineSettings::AllowWindowActivationFromJavaScript,
+                              settings.value(QSL("allowJavaScriptActivateWindow"), false).toBool());
 
-    webSettings->setAttribute(QWebEngineSettings::JavascriptCanPaste, settings.value(QSL("allowJavaScriptPaste"), true).toBool());
-    webSettings->setAttribute(QWebEngineSettings::PlaybackRequiresUserGesture, settings.value(QSL("DisableVideoAutoPlay"), false).toBool());
-    webSettings->setAttribute(QWebEngineSettings::WebRTCPublicInterfacesOnly, settings.value(QSL("WebRTCPublicIpOnly"), true).toBool());
+    webSettings->setAttribute(QWebEngineSettings::JavascriptCanPaste,
+                              settings.value(QSL("allowJavaScriptPaste"), true).toBool());
+    webSettings->setAttribute(QWebEngineSettings::PlaybackRequiresUserGesture,
+                              settings.value(QSL("DisableVideoAutoPlay"), false).toBool());
+    webSettings->setAttribute(QWebEngineSettings::WebRTCPublicInterfacesOnly,
+                              settings.value(QSL("WebRTCPublicIpOnly"), true).toBool());
     webSettings->setUnknownUrlSchemePolicy(QWebEngineSettings::AllowAllUnknownUrlSchemes);
-    webSettings->setAttribute(QWebEngineSettings::DnsPrefetchEnabled, settings.value(QSL("DNSPrefetch"), true).toBool());
-    webSettings->setAttribute(QWebEngineSettings::PdfViewerEnabled, settings.value(QSL("intPDFViewer"), false).toBool());
-    webSettings->setAttribute(QWebEngineSettings::ScreenCaptureEnabled, settings.value(QSL("screenCaptureEnabled"), true).toBool());
+    webSettings->setAttribute(QWebEngineSettings::DnsPrefetchEnabled,
+                              settings.value(QSL("DNSPrefetch"), true).toBool());
+    webSettings->setAttribute(QWebEngineSettings::PdfViewerEnabled,
+                              settings.value(QSL("intPDFViewer"), false).toBool());
+    webSettings->setAttribute(QWebEngineSettings::ScreenCaptureEnabled,
+                              settings.value(QSL("screenCaptureEnabled"), true).toBool());
 
 #if QTWEBENGINECORE_VERSION >= QT_VERSION_CHECK(6, 6, 0)
-    webSettings->setAttribute(QWebEngineSettings::ReadingFromCanvasEnabled, settings.value(QSL("readingFromCanvasEnabled"), true).toBool());
+    webSettings->setAttribute(QWebEngineSettings::ReadingFromCanvasEnabled,
+                              settings.value(QSL("readingFromCanvasEnabled"), true).toBool());
 #endif
 #if QTWEBENGINECORE_VERSION >= QT_VERSION_CHECK(6, 7, 0)
     webSettings->setAttribute(QWebEngineSettings::ForceDarkMode, settings.value(QSL("forceDarkMode"), false).toBool());
@@ -1081,13 +1051,13 @@ void MainApplication::loadSettings()
     const bool allowImageAnimation = settings.value(QSL("allowImageAnimation"), true).toBool();
     if (allowImageAnimation) {
         webSettings->setImageAnimationPolicy(QWebEngineSettings::ImageAnimationPolicy::Allow);
-    }
-    else {
+    } else {
         webSettings->setImageAnimationPolicy(QWebEngineSettings::ImageAnimationPolicy::Disallow);
     }
 #endif
 
-    webSettings->setDefaultTextEncoding(settings.value(QSL("DefaultEncoding"), webSettings->defaultTextEncoding()).toString());
+    webSettings->setDefaultTextEncoding(
+        settings.value(QSL("DefaultEncoding"), webSettings->defaultTextEncoding()).toString());
 
     setWheelScrollLines(settings.value(QSL("wheelScrollLines"), wheelScrollLines()).toInt());
 
@@ -1097,19 +1067,37 @@ void MainApplication::loadSettings()
     setUserStyleSheet(userCss);
 
     settings.beginGroup(QSL("Browser-Fonts"));
-    webSettings->setFontFamily(QWebEngineSettings::StandardFont, settings.value(QSL("StandardFont"), webSettings->fontFamily(QWebEngineSettings::StandardFont)).toString());
-    webSettings->setFontFamily(QWebEngineSettings::CursiveFont, settings.value(QSL("CursiveFont"), webSettings->fontFamily(QWebEngineSettings::CursiveFont)).toString());
-    webSettings->setFontFamily(QWebEngineSettings::FantasyFont, settings.value(QSL("FantasyFont"), webSettings->fontFamily(QWebEngineSettings::FantasyFont)).toString());
-    webSettings->setFontFamily(QWebEngineSettings::FixedFont, settings.value(QSL("FixedFont"), webSettings->fontFamily(QWebEngineSettings::FixedFont)).toString());
-    webSettings->setFontFamily(QWebEngineSettings::SansSerifFont, settings.value(QSL("SansSerifFont"), webSettings->fontFamily(QWebEngineSettings::SansSerifFont)).toString());
-    webSettings->setFontFamily(QWebEngineSettings::SerifFont, settings.value(QSL("SerifFont"), webSettings->fontFamily(QWebEngineSettings::SerifFont)).toString());
+    webSettings->setFontFamily(QWebEngineSettings::StandardFont,
+                               settings.value(
+                                   QSL("StandardFont"),
+                                   webSettings->fontFamily(QWebEngineSettings::StandardFont)).toString());
+    webSettings->setFontFamily(QWebEngineSettings::CursiveFont,
+                               settings.value(
+                                   QSL("CursiveFont"),
+                                   webSettings->fontFamily(QWebEngineSettings::CursiveFont)).toString());
+    webSettings->setFontFamily(QWebEngineSettings::FantasyFont,
+                               settings.value(
+                                   QSL("FantasyFont"),
+                                   webSettings->fontFamily(QWebEngineSettings::FantasyFont)).toString());
+    webSettings->setFontFamily(QWebEngineSettings::FixedFont,
+                               settings.value(QSL("FixedFont"), webSettings->fontFamily(QWebEngineSettings::FixedFont)).
+                               toString());
+    webSettings->setFontFamily(QWebEngineSettings::SansSerifFont,
+                               settings.value(
+                                   QSL("SansSerifFont"),
+                                   webSettings->fontFamily(QWebEngineSettings::SansSerifFont)).toString());
+    webSettings->setFontFamily(QWebEngineSettings::SerifFont,
+                               settings.value(QSL("SerifFont"), webSettings->fontFamily(QWebEngineSettings::SerifFont)).
+                               toString());
     webSettings->setFontSize(QWebEngineSettings::DefaultFontSize, settings.value(QSL("DefaultFontSize"), 15).toInt());
-    webSettings->setFontSize(QWebEngineSettings::DefaultFixedFontSize, settings.value(QSL("FixedFontSize"), 14).toInt());
+    webSettings->setFontSize(QWebEngineSettings::DefaultFixedFontSize,
+                             settings.value(QSL("FixedFontSize"), 14).toInt());
     webSettings->setFontSize(QWebEngineSettings::MinimumFontSize, settings.value(QSL("MinimumFontSize"), 3).toInt());
-    webSettings->setFontSize(QWebEngineSettings::MinimumLogicalFontSize, settings.value(QSL("MinimumLogicalFontSize"), 5).toInt());
+    webSettings->setFontSize(QWebEngineSettings::MinimumLogicalFontSize,
+                             settings.value(QSL("MinimumLogicalFontSize"), 5).toInt());
     settings.endGroup();
 
-    QWebEngineProfile* profile = m_webProfile;
+    QWebEngineProfile *profile = m_webProfile;
 #if QTWEBENGINECORE_VERSION < QT_VERSION_CHECK(6, 9, 0)
     profile->setPersistentCookiesPolicy(QWebEngineProfile::AllowPersistentCookies);
     profile->setPersistentStoragePath(DataPaths::currentProfilePath());
@@ -1148,49 +1136,133 @@ void MainApplication::loadSettings()
     networkManager()->loadSettings();
 }
 
-void MainApplication::loadTheme(const QString &name)
-{
+
+void MainApplication::loadTheme(const QString &name) {
     QString activeThemePath = DataPaths::locate(DataPaths::Themes, name);
 
+    // browser:e8y6 - locate themes installed in the original
+    // Falkon data directory when standard discovery fails.
     if (activeThemePath.isEmpty()) {
-        qWarning() << "Cannot load theme " << name;
-        activeThemePath = QSL("%1/%2").arg(DataPaths::path(DataPaths::Themes), DEFAULT_THEME_NAME);
+        const QDir executableDir(
+            QCoreApplication::applicationDirPath()
+        );
+
+        const QStringList fallbackPaths = {
+            executableDir.absoluteFilePath(
+                QSL("../share/falkon/themes/") + name
+            ),
+            executableDir.absoluteFilePath(
+                QSL("../share/browser-e8y6/themes/") + name
+            ),
+            QSL("/usr/share/falkon/themes/") + name,
+            QSL("/usr/local/share/falkon/themes/") + name
+        };
+
+        for (const QString &candidate: fallbackPaths) {
+            if (QFileInfo(
+                QDir(candidate).filePath(QSL("main.css"))
+            ).isFile()) {
+                activeThemePath = candidate;
+                break;
+            }
+        }
     }
 
-    QString qss = QzTools::readAllFileContents(activeThemePath + QLatin1String("/main.css"));
+    // Fall back to the default theme when the selected one is unavailable.
+    if (activeThemePath.isEmpty()) {
+        qWarning() << "Cannot load theme" << name;
+
+        activeThemePath = DataPaths::locate(
+            DataPaths::Themes,
+            DEFAULT_THEME_NAME
+        );
+    }
+
+    // Resolve the default theme from the installed Falkon directory too.
+    if (activeThemePath.isEmpty()) {
+        const QDir executableDir(
+            QCoreApplication::applicationDirPath()
+        );
+
+        const QString defaultThemePath =
+                executableDir.absoluteFilePath(
+                    QSL("../share/falkon/themes/") +
+                    DEFAULT_THEME_NAME
+                );
+
+        if (QFileInfo(
+            QDir(defaultThemePath).filePath(QSL("main.css"))
+        ).isFile()) {
+            activeThemePath = defaultThemePath;
+        }
+    }
+
+    if (activeThemePath.isEmpty()) {
+        qWarning() << "Cannot find a usable browser theme";
+        return;
+    }
+
+    // Load the main stylesheet.
+    QString qss = QzTools::readAllFileContents(
+        activeThemePath + QLatin1String("/main.css")
+    );
 
 #if defined(Q_OS_MACOS)
-    qss.append(QzTools::readAllFileContents(activeThemePath + QLatin1String("/mac.css")));
+    qss.append(QzTools::readAllFileContents(
+        activeThemePath + QLatin1String("/mac.css")
+    ));
 #elif defined(Q_OS_UNIX)
-    qss.append(QzTools::readAllFileContents(activeThemePath + QLatin1String("/linux.css")));
+    qss.append(QzTools::readAllFileContents(
+        activeThemePath + QLatin1String("/linux.css")
+    ));
 #elif defined(Q_OS_WIN) || defined(Q_OS_OS2)
-    qss.append(QzTools::readAllFileContents(activeThemePath + QLatin1String("/windows.css")));
+    qss.append(QzTools::readAllFileContents(
+        activeThemePath + QLatin1String("/windows.css")
+    ));
 #endif
 
     if (isRightToLeft()) {
-        qss.append(QzTools::readAllFileContents(activeThemePath + QLatin1String("/rtl.css")));
+        qss.append(QzTools::readAllFileContents(
+            activeThemePath + QLatin1String("/rtl.css")
+        ));
     }
 
     if (isPrivate()) {
-        qss.append(QzTools::readAllFileContents(activeThemePath + QLatin1String("/private.css")));
+        qss.append(QzTools::readAllFileContents(
+            activeThemePath + QLatin1String("/private.css")
+        ));
     }
 
-    qss.append(QzTools::readAllFileContents(DataPaths::currentProfilePath() + QL1S("/userChrome.css")));
+    // Preserve profile-specific browser styling.
+    qss.append(QzTools::readAllFileContents(
+        DataPaths::currentProfilePath() +
+        QL1S("/userChrome.css")
+    ));
 
-    QString relativePath = QDir::current().relativeFilePath(activeThemePath);
-    qss.replace(QRegularExpression(QSL("url\\s*\\(\\s*([^\\*:\\);]+)\\s*\\)")), QSL("url(%1/\\1)").arg(relativePath));
+    // Resolve relative stylesheet asset paths against the theme directory.
+    const QString relativePath =
+            QDir::current().relativeFilePath(activeThemePath);
+
+    qss.replace(
+        QRegularExpression(
+            QSL("url\\s*\\(\\s*([^\\*:);]+)\\s*\\)")
+        ),
+        QSL("url(%1/\\1)").arg(relativePath)
+    );
+
     setStyleSheet(qss);
 }
 
-void MainApplication::checkDefaultWebBrowser()
-{
+
+void MainApplication::checkDefaultWebBrowser() {
     if (isPortable()) {
         return;
     }
 
 #if defined(Q_OS_WIN) && !defined(Q_OS_OS2)
     Settings settings;
-    bool checkNow = settings.value(QSL("Web-Browser-Settings/CheckDefaultBrowser"), DEFAULT_CHECK_DEFAULTBROWSER).toBool();
+    bool checkNow = settings.value(QSL("Web-Browser-Settings/CheckDefaultBrowser"), DEFAULT_CHECK_DEFAULTBROWSER).
+            toBool();
 
     if (!checkNow) {
         return;
@@ -1201,7 +1273,8 @@ void MainApplication::checkDefaultWebBrowser()
     if (!associationManager()->isDefaultForAllCapabilities()) {
         CheckBoxDialog dialog(QMessageBox::Yes | QMessageBox::No, getWindow());
         dialog.setDefaultButton(QMessageBox::Yes);
-        dialog.setText(tr("Falkon is not currently your default browser. Would you like to make it your default browser?"));
+        dialog.setText(
+            tr("Falkon is not currently your default browser. Would you like to make it your default browser?"));
         dialog.setCheckBoxText(tr("Always perform this check when starting Falkon."));
         dialog.setDefaultCheckState(Qt::Checked);
         dialog.setWindowTitle(tr("Default Browser"));
@@ -1219,8 +1292,7 @@ void MainApplication::checkDefaultWebBrowser()
 #endif
 }
 
-void MainApplication::checkOptimizeDatabase()
-{
+void MainApplication::checkOptimizeDatabase() {
     Settings settings;
     settings.beginGroup(QSL("Browser"));
     const int numberOfRuns = settings.value(QSL("RunsWithoutOptimizeDb"), 0).toInt();
@@ -1235,21 +1307,24 @@ void MainApplication::checkOptimizeDatabase()
     settings.endGroup();
 }
 
-void MainApplication::registerAllowedSchemes()
-{
-    for (const QString &schemeName : std::as_const(qzSettings->allowedSchemes)) {
+
+void MainApplication::registerAllowedSchemes() {
+    for (const QString &schemeName: std::as_const(qzSettings->allowedSchemes)) {
         if (qzSettings->blockedSchemes.contains(schemeName)) {
             continue;
         }
+
         QWebEngineUrlScheme scheme(schemeName.toUtf8());
-        scheme.setFlags(QWebEngineUrlScheme::SecureScheme | QWebEngineUrlScheme::ContentSecurityPolicyIgnored);
+        scheme.setFlags(
+            QWebEngineUrlScheme::SecureScheme |
+            QWebEngineUrlScheme::ContentSecurityPolicyIgnored
+        );
         scheme.setSyntax(QWebEngineUrlScheme::Syntax::Path);
         QWebEngineUrlScheme::registerScheme(scheme);
     }
 }
 
-void MainApplication::initNetworkInformation()
-{
+void MainApplication::initNetworkInformation() {
     bool loaded = QNetworkInformation::loadBackendByFeatures(QNetworkInformation::Feature::Reachability |
                                                              QNetworkInformation::Feature::CaptivePortal);
     if (!loaded) {
@@ -1257,8 +1332,7 @@ void MainApplication::initNetworkInformation()
     }
 }
 
-void MainApplication::setupUserScripts()
-{
+void MainApplication::setupUserScripts() {
     // WebChannel for SafeJsWorld
     QWebEngineScript script;
     script.setName(QSL("_falkon_webchannel"));
@@ -1275,10 +1349,10 @@ void MainApplication::setupUserScripts()
     m_webProfile->scripts()->insert(falkonRestore);
 
     // falkon:speeddial
-    QWebEngineScript falkonSpeedDial;
+    /*QWebEngineScript falkonSpeedDial;
     falkonSpeedDial.setWorldId(WebPage::SafeJsWorld);
     falkonSpeedDial.setSourceCode(Scripts::setupSpeedDial());
-    m_webProfile->scripts()->insert(falkonSpeedDial);
+    m_webProfile->scripts()->insert(falkonSpeedDial);*/
 
     // document.window object addons
     QWebEngineScript documentWindowAddons;
@@ -1290,8 +1364,7 @@ void MainApplication::setupUserScripts()
     m_webProfile->scripts()->insert(documentWindowAddons);
 }
 
-void MainApplication::setUserStyleSheet(const QString &filePath)
-{
+void MainApplication::setUserStyleSheet(const QString &filePath) {
     QString userCss;
 
 #if !defined(Q_OS_UNIX) && !defined(Q_OS_MACOS)
@@ -1312,7 +1385,7 @@ void MainApplication::setUserStyleSheet(const QString &filePath)
     userCss += QzTools::readAllFileContents(filePath).remove(QLatin1Char('\n'));
 
     const QString name = QStringLiteral("_falkon_userstylesheet");
-    for (const QWebEngineScript &oldScript : m_webProfile->scripts()->find(name)) {
+    for (const QWebEngineScript &oldScript: m_webProfile->scripts()->find(name)) {
         m_webProfile->scripts()->remove(oldScript);
     }
 
@@ -1328,66 +1401,69 @@ void MainApplication::setUserStyleSheet(const QString &filePath)
     m_webProfile->scripts()->insert(script);
 }
 
-void MainApplication::initPulseSupport()
-{
+void MainApplication::initPulseSupport() {
     qputenv("PULSE_PROP_OVERRIDE_application.name", "Falkon");
     qputenv("PULSE_PROP_OVERRIDE_application.icon_name", "falkon");
     qputenv("PULSE_PROP_OVERRIDE_media.icon_name", "falkon");
 }
 
 #if defined(Q_OS_WIN) && !defined(Q_OS_OS2)
-RegisterQAppAssociation* MainApplication::associationManager()
-{
+RegisterQAppAssociation *MainApplication::associationManager() {
     if (!m_registerQAppAssociation) {
-        QString desc = tr("Falkon is a new and very fast Qt web browser. Falkon is licensed under GPL version 3 or (at your option) any later version. It is based on QtWebEngine and Qt Framework.");
+        QString desc = tr(
+            "Falkon is a new and very fast Qt web browser. Falkon is licensed under GPL version 3 or (at your option) any later version. It is based on QtWebEngine and Qt Framework.");
         QString fileIconPath = QApplication::applicationFilePath() + QSL(",1");
         QString appIconPath = QApplication::applicationFilePath() + QSL(",0");
-        m_registerQAppAssociation = new RegisterQAppAssociation(QSL("Falkon"), QApplication::applicationFilePath(), appIconPath, desc, this);
-        m_registerQAppAssociation->addCapability(QSL(".html"), QSL("FalkonHTML"), QSL("Falkon HTML Document"), fileIconPath, RegisterQAppAssociation::FileAssociation);
-        m_registerQAppAssociation->addCapability(QSL(".htm"), QSL("FalkonHTML"), QSL("Falkon HTML Document"), fileIconPath, RegisterQAppAssociation::FileAssociation);
-        m_registerQAppAssociation->addCapability(QSL("http"), QSL("FalkonURL"), QSL("Falkon URL"), appIconPath, RegisterQAppAssociation::UrlAssociation);
-        m_registerQAppAssociation->addCapability(QSL("https"), QSL("FalkonURL"), QSL("Falkon URL"), appIconPath, RegisterQAppAssociation::UrlAssociation);
+        m_registerQAppAssociation = new RegisterQAppAssociation(
+            QSL("Falkon"), QApplication::applicationFilePath(), appIconPath, desc, this);
+        m_registerQAppAssociation->addCapability(QSL(".html"), QSL("FalkonHTML"), QSL("Falkon HTML Document"),
+                                                 fileIconPath, RegisterQAppAssociation::FileAssociation);
+        m_registerQAppAssociation->addCapability(QSL(".htm"), QSL("FalkonHTML"), QSL("Falkon HTML Document"),
+                                                 fileIconPath, RegisterQAppAssociation::FileAssociation);
+        m_registerQAppAssociation->addCapability(QSL("http"), QSL("FalkonURL"), QSL("Falkon URL"), appIconPath,
+                                                 RegisterQAppAssociation::UrlAssociation);
+        m_registerQAppAssociation->addCapability(QSL("https"), QSL("FalkonURL"), QSL("Falkon URL"), appIconPath,
+                                                 RegisterQAppAssociation::UrlAssociation);
     }
     return m_registerQAppAssociation;
 }
 #endif
 
 
-bool MainApplication::event(QEvent* e)
-{
+bool MainApplication::event(QEvent *e) {
     switch (e->type()) {
-    case QEvent::ApplicationPaletteChange: {
-        Settings settings;
-        QString activeTheme = settings.value(QSL("Themes/activeTheme"), DEFAULT_THEME_NAME).toString();
+        case QEvent::ApplicationPaletteChange: {
+            Settings settings;
+            QString activeTheme = settings.value(QSL("Themes/activeTheme"), DEFAULT_THEME_NAME).toString();
 
-        loadTheme(activeTheme);
+            loadTheme(activeTheme);
 
-        Q_EMIT systemThemeChanged();
+            Q_EMIT systemThemeChanged();
 
-        return true;
-    }
+            return true;
+        }
 
 #ifdef Q_OS_MACOS
-    case QEvent::FileOpen: {
-        QFileOpenEvent *ev = static_cast<QFileOpenEvent*>(e);
-        if (!ev->url().isEmpty()) {
-            addNewTab(ev->url());
-        } else if (!ev->file().isEmpty()) {
-            addNewTab(QUrl::fromLocalFile(ev->file()));
-        } else {
-            return false;
+        case QEvent::FileOpen: {
+            QFileOpenEvent *ev = static_cast<QFileOpenEvent *>(e);
+            if (!ev->url().isEmpty()) {
+                addNewTab(ev->url());
+            } else if (!ev->file().isEmpty()) {
+                addNewTab(QUrl::fromLocalFile(ev->file()));
+            } else {
+                return false;
+            }
+            return true;
         }
-        return true;
-    }
 
-    case QEvent::ApplicationActivate:
-        if (!activeWindow() && m_windows.isEmpty())
-            createWindow(Qz::BW_NewWindow);
-        break;
+        case QEvent::ApplicationActivate:
+            if (!activeWindow() && m_windows.isEmpty())
+                createWindow(Qz::BW_NewWindow);
+            break;
 #endif
 
-    default:
-        break;
+        default:
+            break;
     }
 
     return QtSingleApplication::event(e);

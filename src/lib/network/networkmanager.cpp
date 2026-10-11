@@ -44,15 +44,32 @@
 #include <QWebEngineUrlScheme>
 
 NetworkManager::NetworkManager(QObject *parent)
-    : QNetworkAccessManager(parent)
-{
+    : QNetworkAccessManager(parent) {
     // Create scheme handlers
     m_extensionScheme = new ExtensionSchemeManager(this);
 
-    mApp->webProfile()->installUrlSchemeHandler(QByteArrayLiteral("falkon"), new FalkonSchemeHandler(this));
-    mApp->webProfile()->installUrlSchemeHandler(QByteArrayLiteral("extension"), m_extensionScheme);
+    // browser:e8y6 - use the existing Falkon handler for both schemes.
+    auto *internalSchemeHandler = new FalkonSchemeHandler(this);
+
+    mApp->webProfile()->installUrlSchemeHandler(
+        QByteArrayLiteral("falkon"),
+        internalSchemeHandler
+    );
+
+    mApp->webProfile()->installUrlSchemeHandler(
+        QByteArrayLiteral("browser-e8y6"),
+        internalSchemeHandler
+    );
+
+    mApp->webProfile()->installUrlSchemeHandler(
+        QByteArrayLiteral("extension"),
+        m_extensionScheme
+    );
+
     WebPage::addSupportedScheme(QSL("falkon"));
+    WebPage::addSupportedScheme(QSL("browser-e8y6"));
     WebPage::addSupportedScheme(QSL("extension"));
+
 
     // Create url interceptor
     m_urlInterceptor = new NetworkUrlInterceptor(this);
@@ -61,17 +78,18 @@ NetworkManager::NetworkManager(QObject *parent)
     // Create cookie jar
     mApp->cookieJar();
 
-    connect(this, &QNetworkAccessManager::authenticationRequired, this, [this](QNetworkReply *reply, QAuthenticator *auth) {
-        authentication(reply->url(), auth);
-    });
+    connect(this, &QNetworkAccessManager::authenticationRequired, this,
+            [this](QNetworkReply *reply, QAuthenticator *auth) {
+                authentication(reply->url(), auth);
+            });
 
-    connect(this, &QNetworkAccessManager::proxyAuthenticationRequired, this, [this](const QNetworkProxy &proxy, QAuthenticator *auth) {
-        proxyAuthentication(proxy.hostName(), auth);
-    });
+    connect(this, &QNetworkAccessManager::proxyAuthenticationRequired, this,
+            [this](const QNetworkProxy &proxy, QAuthenticator *auth) {
+                proxyAuthentication(proxy.hostName(), auth);
+            });
 }
 
-bool NetworkManager::certificateError(QWebEngineCertificateError &error, QWidget *parent)
-{
+bool NetworkManager::certificateError(QWebEngineCertificateError &error, QWidget *parent) {
     const QString &host = error.url().host();
     const auto errorType = error.type();
 
@@ -80,7 +98,7 @@ bool NetworkManager::certificateError(QWebEngineCertificateError &error, QWidget
     }
 
     if ((m_ignoredSslErrors.contains(host) && m_ignoredSslErrors.value(host) == errorType)
-            || m_ignoredSslHosts.contains(host)) {
+        || m_ignoredSslHosts.contains(host)) {
         return true;
     }
 
@@ -89,7 +107,10 @@ bool NetworkManager::certificateError(QWebEngineCertificateError &error, QWidget
         error.defer();
 
     QString title = tr("SSL Certificate Error!");
-    QString text1 = tr("The page <strong>%1</strong> you are trying to access has the following errors in the SSL certificate:").arg(host);
+    QString text1 = tr(
+                "The page <strong>%1</strong> you are trying to access has the following errors in the SSL certificate:")
+            .
+            arg(host);
     QString text2 = tr("Would you like to make an exception for this certificate?");
 
     const auto errorDescription = error.description();
@@ -101,51 +122,50 @@ bool NetworkManager::certificateError(QWebEngineCertificateError &error, QWidget
     dialog.exec();
 
     switch (dialog.result()) {
-    case SslErrorDialog::Yes:
-        m_ignoredSslHosts.append(host);
-        saveIgnoredSslHosts();
-        return true;
+        case SslErrorDialog::Yes:
+            m_ignoredSslHosts.append(host);
+            saveIgnoredSslHosts();
+            return true;
 
-    case SslErrorDialog::OnlyForThisSession:
-        m_ignoredSslErrors[host] = errorType;
-        return true;
+        case SslErrorDialog::OnlyForThisSession:
+            m_ignoredSslErrors[host] = errorType;
+            return true;
 
-    case SslErrorDialog::NoForThisSession:
-        m_rejectedSslErrors[host] = errorType;
-        return false;
+        case SslErrorDialog::NoForThisSession:
+            m_rejectedSslErrors[host] = errorType;
+            return false;
 
-    default:
-        return false;
+        default:
+            return false;
     }
 }
 
-void NetworkManager::authentication(const QUrl &url, QAuthenticator *auth, QWidget *parent)
-{
-    auto* dialog = new QDialog(parent);
+void NetworkManager::authentication(const QUrl &url, QAuthenticator *auth, QWidget *parent) {
+    auto *dialog = new QDialog(parent);
     dialog->setWindowTitle(tr("Authorization required"));
 
-    auto* formLa = new QFormLayout(dialog);
+    auto *formLa = new QFormLayout(dialog);
 
-    auto* label = new QLabel(dialog);
-    auto* userLab = new QLabel(dialog);
-    auto* passLab = new QLabel(dialog);
+    auto *label = new QLabel(dialog);
+    auto *userLab = new QLabel(dialog);
+    auto *passLab = new QLabel(dialog);
     userLab->setText(tr("Username: "));
     passLab->setText(tr("Password: "));
 
-    auto* user = new QLineEdit(dialog);
-    auto* pass = new QLineEdit(dialog);
+    auto *user = new QLineEdit(dialog);
+    auto *pass = new QLineEdit(dialog);
     pass->setEchoMode(QLineEdit::Password);
-    auto* save = new QCheckBox(dialog);
+    auto *save = new QCheckBox(dialog);
     save->setText(tr("Save username and password for this site"));
 
-    auto* box = new QDialogButtonBox(dialog);
+    auto *box = new QDialogButtonBox(dialog);
     box->addButton(QDialogButtonBox::Ok);
     box->addButton(QDialogButtonBox::Cancel);
     connect(box, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
     connect(box, &QDialogButtonBox::accepted, dialog, &QDialog::accept);
 
     label->setText(tr("A username and password are being requested by %1. "
-                      "The site says: \"%2\"").arg(url.host(), auth->realm().toHtmlEscaped()));
+        "The site says: \"%2\"").arg(url.host(), auth->realm().toHtmlEscaped()));
 
     formLa->addRow(label);
     formLa->addRow(userLab, user);
@@ -153,7 +173,7 @@ void NetworkManager::authentication(const QUrl &url, QAuthenticator *auth, QWidg
     formLa->addRow(save);
     formLa->addWidget(box);
 
-    AutoFill* fill = mApp->autoFill();
+    AutoFill *fill = mApp->autoFill();
     QString storedUser;
     QString storedPassword;
     bool shouldUpdateEntry = false;
@@ -189,8 +209,7 @@ void NetworkManager::authentication(const QUrl &url, QAuthenticator *auth, QWidg
             if (storedUser != user->text() || storedPassword != pass->text()) {
                 fill->updateEntry(url, user->text(), pass->text());
             }
-        }
-        else {
+        } else {
             fill->addEntry(url, user->text(), pass->text());
         }
     }
@@ -198,8 +217,7 @@ void NetworkManager::authentication(const QUrl &url, QAuthenticator *auth, QWidg
     delete dialog;
 }
 
-void NetworkManager::proxyAuthentication(const QString &proxyHost, QAuthenticator *auth, QWidget *parent)
-{
+void NetworkManager::proxyAuthentication(const QString &proxyHost, QAuthenticator *auth, QWidget *parent) {
     const QNetworkProxy proxy = QNetworkProxy::applicationProxy();
     if (!proxy.user().isEmpty() && !proxy.password().isEmpty()) {
         auth->setUser(proxy.user());
@@ -207,22 +225,22 @@ void NetworkManager::proxyAuthentication(const QString &proxyHost, QAuthenticato
         return;
     }
 
-    auto* dialog = new QDialog(parent);
+    auto *dialog = new QDialog(parent);
     dialog->setWindowTitle(tr("Proxy authorization required"));
 
-    auto* formLa = new QFormLayout(dialog);
+    auto *formLa = new QFormLayout(dialog);
 
-    auto* label = new QLabel(dialog);
-    auto* userLab = new QLabel(dialog);
-    auto* passLab = new QLabel(dialog);
+    auto *label = new QLabel(dialog);
+    auto *userLab = new QLabel(dialog);
+    auto *passLab = new QLabel(dialog);
     userLab->setText(tr("Username: "));
     passLab->setText(tr("Password: "));
 
-    auto* user = new QLineEdit(dialog);
-    auto* pass = new QLineEdit(dialog);
+    auto *user = new QLineEdit(dialog);
+    auto *pass = new QLineEdit(dialog);
     pass->setEchoMode(QLineEdit::Password);
 
-    auto* box = new QDialogButtonBox(dialog);
+    auto *box = new QDialogButtonBox(dialog);
     box->addButton(QDialogButtonBox::Ok);
     box->addButton(QDialogButtonBox::Cancel);
     connect(box, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
@@ -246,28 +264,23 @@ void NetworkManager::proxyAuthentication(const QString &proxyHost, QAuthenticato
     delete dialog;
 }
 
-void NetworkManager::installUrlInterceptor(UrlInterceptor *interceptor)
-{
+void NetworkManager::installUrlInterceptor(UrlInterceptor *interceptor) {
     m_urlInterceptor->installUrlInterceptor(interceptor);
 }
 
-void NetworkManager::removeUrlInterceptor(UrlInterceptor *interceptor)
-{
+void NetworkManager::removeUrlInterceptor(UrlInterceptor *interceptor) {
     m_urlInterceptor->removeUrlInterceptor(interceptor);
 }
 
-void NetworkManager::registerExtensionSchemeHandler(const QString &name, ExtensionSchemeHandler *handler)
-{
+void NetworkManager::registerExtensionSchemeHandler(const QString &name, ExtensionSchemeHandler *handler) {
     m_extensionScheme->registerHandler(name, handler);
 }
 
-void NetworkManager::unregisterExtensionSchemeHandler(ExtensionSchemeHandler *handler)
-{
+void NetworkManager::unregisterExtensionSchemeHandler(ExtensionSchemeHandler *handler) {
     m_extensionScheme->unregisterHandler(handler);
 }
 
-void NetworkManager::loadSettings()
-{
+void NetworkManager::loadSettings() {
     Settings settings;
     settings.beginGroup(QSL("Language"));
     QStringList langs = settings.value(QSL("acceptLanguage"), AcceptLanguage::defaultLanguage()).toStringList();
@@ -306,37 +319,31 @@ void NetworkManager::loadSettings()
     settings.endGroup();
 }
 
-void NetworkManager::saveIgnoredSslHosts()
-{
+void NetworkManager::saveIgnoredSslHosts() {
     Settings settings;
     settings.beginGroup(QSL("Web-Browser-Settings"));
     settings.setValue(QSL("IgnoredSslHosts"), m_ignoredSslHosts);
     settings.endGroup();
 }
 
-void NetworkManager::shutdown()
-{
+void NetworkManager::shutdown() {
     mApp->webProfile()->setUrlRequestInterceptor(nullptr);
     saveIgnoredSslHosts();
 }
 
-const QStringList NetworkManager::ignoredSslHosts() const
-{
+const QStringList NetworkManager::ignoredSslHosts() const {
     return m_ignoredSslHosts;
 }
 
-const QHash<QString, QWebEngineCertificateError::Type> NetworkManager::ignoredSslErrors() const
-{
+const QHash<QString, QWebEngineCertificateError::Type> NetworkManager::ignoredSslErrors() const {
     return m_ignoredSslErrors;
 }
 
-const QHash<QString, QWebEngineCertificateError::Type> NetworkManager::rejectedSslErrors() const
-{
+const QHash<QString, QWebEngineCertificateError::Type> NetworkManager::rejectedSslErrors() const {
     return m_rejectedSslErrors;
 }
 
-QString NetworkManager::sslErrorDescription(const QWebEngineCertificateError::Type error) const
-{
+QString NetworkManager::sslErrorDescription(const QWebEngineCertificateError::Type error) const {
     /* DISCLAIMER
        The error descriptions are taken from Qt documentation.
      */
@@ -370,7 +377,8 @@ QString NetworkManager::sslErrorDescription(const QWebEngineCertificateError::Ty
         case QWebEngineCertificateError::CertificateValidityTooLong:
             return tr("The certificate has a validity period that is too long.");
         case QWebEngineCertificateError::CertificateTransparencyRequired:
-            return tr("Certificate Transparency was required for this connection, but the server did not provide CT information that complied with the policy.");
+            return tr(
+                "Certificate Transparency was required for this connection, but the server did not provide CT information that complied with the policy.");
         case QWebEngineCertificateError::CertificateKnownInterceptionBlocked:
             return tr("The certificate is known to be used for interception by an entity other the device owner.");
         case QWebEngineCertificateError::SslObsoleteVersion:
@@ -384,31 +392,48 @@ QString NetworkManager::sslErrorDescription(const QWebEngineCertificateError::Ty
 }
 
 // static
-void NetworkManager::registerSchemes()
-{
+
+void NetworkManager::registerSchemes() {
     QWebEngineUrlScheme falkonScheme("falkon");
-    falkonScheme.setFlags(QWebEngineUrlScheme::SecureScheme | QWebEngineUrlScheme::ContentSecurityPolicyIgnored);
+    falkonScheme.setFlags(
+        QWebEngineUrlScheme::SecureScheme |
+        QWebEngineUrlScheme::ContentSecurityPolicyIgnored
+    );
     falkonScheme.setSyntax(QWebEngineUrlScheme::Syntax::Path);
     QWebEngineUrlScheme::registerScheme(falkonScheme);
 
+    // browser:e8y6 internal URL alias
+    QWebEngineUrlScheme browserScheme("browser-e8y6");
+    browserScheme.setFlags(
+        QWebEngineUrlScheme::SecureScheme |
+        QWebEngineUrlScheme::ContentSecurityPolicyIgnored
+    );
+    browserScheme.setSyntax(QWebEngineUrlScheme::Syntax::Path);
+    QWebEngineUrlScheme::registerScheme(browserScheme);
+
     QWebEngineUrlScheme extensionScheme("extension");
-    extensionScheme.setFlags(QWebEngineUrlScheme::SecureScheme | QWebEngineUrlScheme::ContentSecurityPolicyIgnored);
+    extensionScheme.setFlags(
+        QWebEngineUrlScheme::SecureScheme |
+        QWebEngineUrlScheme::ContentSecurityPolicyIgnored
+    );
     extensionScheme.setSyntax(QWebEngineUrlScheme::Syntax::Path);
     QWebEngineUrlScheme::registerScheme(extensionScheme);
 
     QWebEngineUrlScheme adblockScheme("abp-resource");
-    adblockScheme.setFlags(QWebEngineUrlScheme::SecureScheme
-                         | QWebEngineUrlScheme::ContentSecurityPolicyIgnored
+    adblockScheme.setFlags(
+        QWebEngineUrlScheme::SecureScheme
+        | QWebEngineUrlScheme::ContentSecurityPolicyIgnored
 #if QTWEBENGINECORE_VERSION >= QT_VERSION_CHECK(6, 6, 0)
-                         | QWebEngineUrlScheme::FetchApiAllowed
+        | QWebEngineUrlScheme::FetchApiAllowed
 #endif
     );
     adblockScheme.setSyntax(QWebEngineUrlScheme::Syntax::Path);
     QWebEngineUrlScheme::registerScheme(adblockScheme);
 }
 
-QNetworkReply *NetworkManager::createRequest(QNetworkAccessManager::Operation op, const QNetworkRequest &request, QIODevice *outgoingData)
-{
+
+QNetworkReply *NetworkManager::createRequest(QNetworkAccessManager::Operation op, const QNetworkRequest &request,
+                                             QIODevice *outgoingData) {
     QNetworkRequest req = request;
     /* TODO Use HTTP2 */
 

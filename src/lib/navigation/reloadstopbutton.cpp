@@ -51,6 +51,7 @@ void ReloadStopButton::showReloadButton()
     m_updateTimer->start();
 }
 
+
 void ReloadStopButton::updateButton()
 {
     if (m_loadInProgress) {
@@ -62,9 +63,20 @@ void ReloadStopButton::updateButton()
         setObjectName(QSL("navigation-button-reload"));
     }
 
-    // Update the stylesheet for the changed object name
+    // Refresh the stylesheet for the current button state.
     style()->unpolish(this);
     style()->polish(this);
+
+    // Provide a working Qt icon when the theme icon is missing.
+    if (icon().isNull()) {
+        setFallbackIcon(
+            style()->standardIcon(
+                m_loadInProgress
+                    ? QStyle::SP_BrowserStop
+                    : QStyle::SP_BrowserReload
+            )
+        );
+    }
 }
 
 void ReloadStopButton::buttonClicked()

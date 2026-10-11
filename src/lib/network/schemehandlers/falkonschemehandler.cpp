@@ -16,6 +16,7 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 * ============================================================ */
+#include <QFile>
 #include "falkonschemehandler.h"
 #include "qztools.h"
 #include "browserwindow.h"
@@ -38,8 +39,26 @@
 #include <QtWebEngineCoreVersion>
 #include <QMetaType>
 
-static QString authorString(const Qz::AuthorInfo &author)
-{
+
+static QString imageResourceDataUrl(
+    const QString &resourcePath,
+    const QString &mimeType) {
+    QFile file(resourcePath);
+
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Cannot load image resource:" << resourcePath;
+        return QString();
+    }
+
+    const QByteArray imageData = file.readAll();
+
+    return QSL("data:") + mimeType +
+           QSL(";base64,") +
+           QString::fromLatin1(imageData.toBase64());
+}
+
+
+static QString authorString(const Qz::AuthorInfo &author) {
     return QSL("&copy; %1-%2 %3 &lt;<a href=\"mailto:%2\">%4</a>&gt;<br>").arg(
         QString::number(author.copyrightBegin),
         QString::number(author.copyrightEnd),
@@ -49,12 +68,10 @@ static QString authorString(const Qz::AuthorInfo &author)
 }
 
 FalkonSchemeHandler::FalkonSchemeHandler(QObject *parent)
-    : QWebEngineUrlSchemeHandler(parent)
-{
+    : QWebEngineUrlSchemeHandler(parent) {
 }
 
-void FalkonSchemeHandler::requestStarted(QWebEngineUrlRequestJob *job)
-{
+void FalkonSchemeHandler::requestStarted(QWebEngineUrlRequestJob *job) {
     if (handleRequest(job)) {
         return;
     }
@@ -68,39 +85,65 @@ void FalkonSchemeHandler::requestStarted(QWebEngineUrlRequestJob *job)
         job->fail(QWebEngineUrlRequestJob::UrlInvalid);
 }
 
-bool FalkonSchemeHandler::handleRequest(QWebEngineUrlRequestJob *job)
-{
-    QUrlQuery query(job->requestUrl());
-    if (!query.isEmpty() && job->requestUrl().path() == QL1S("restore")) {
+
+bool FalkonSchemeHandler::handleRequest(QWebEngineUrlRequestJob *job) {
+    const QUrl requestUrl = job->requestUrl();
+    QUrlQuery query(requestUrl);
+
+
+    // browser:e8y6 - retire Speed Dial without deleting saved data.
+    if (requestUrl.path() == QL1S("speeddial")) {
+        job->redirect(QUrl(QSL("browser-e8y6:start")));
+        return true;
+    }
+
+
+    if (!query.isEmpty() && requestUrl.path() == QL1S("restore")) {
         if (mApp->restoreManager()) {
             if (query.hasQueryItem(QSL("new-session"))) {
                 mApp->restoreManager()->clearRestoreData();
             } else if (query.hasQueryItem(QSL("restore-session"))) {
-                mApp->restoreSession(nullptr, mApp->restoreManager()->restoreData());
+                mApp->restoreSession(
+                    nullptr,
+                    mApp->restoreManager()->restoreData()
+                );
             }
         }
+
         mApp->destroyRestoreManager();
-        job->redirect(QUrl(QSL("falkon:start")));
+
+        // Preserve the scheme used to open session recovery.
+        const QString homeScheme =
+                requestUrl.scheme() == QL1S("browser-e8y6")
+                    ? QSL("browser-e8y6")
+                    : QSL("falkon");
+
+        QUrl homeUrl;
+        homeUrl.setScheme(homeScheme);
+        homeUrl.setPath(QSL("start"));
+
+        job->redirect(homeUrl);
         return true;
-    } else if (job->requestUrl().path() == QL1S("reportbug")) {
-        job->redirect(QUrl(QString::fromLatin1(Qz::BUGSADDRESS)));
+    } else if (requestUrl.path() == QL1S("reportbug")) {
+        job->redirect(
+            QUrl(QString::fromLatin1(Qz::BUGSADDRESS))
+        );
         return true;
     }
 
     return false;
 }
 
+
 FalkonSchemeReply::FalkonSchemeReply(QWebEngineUrlRequestJob *job, QObject *parent)
     : QIODevice(parent)
-    , m_loaded(false)
-    , m_job(job)
-{
+      , m_loaded(false)
+      , m_job(job) {
     m_pageName = m_job->requestUrl().path();
     loadPage();
 }
 
-void FalkonSchemeReply::loadPage()
-{
+void FalkonSchemeReply::loadPage() {
     if (m_loaded)
         return;
 
@@ -128,28 +171,24 @@ void FalkonSchemeReply::loadPage()
     m_loaded = true;
 }
 
-qint64 FalkonSchemeReply::bytesAvailable() const
-{
+qint64 FalkonSchemeReply::bytesAvailable() const {
     QMutexLocker lock(&m_mutex);
     return m_buffer.bytesAvailable();
 }
 
-qint64 FalkonSchemeReply::readData(char *data, qint64 maxSize)
-{
+qint64 FalkonSchemeReply::readData(char *data, qint64 maxSize) {
     QMutexLocker lock(&m_mutex);
     return m_buffer.read(data, maxSize);
 }
 
-qint64 FalkonSchemeReply::writeData(const char *data, qint64 len)
-{
+qint64 FalkonSchemeReply::writeData(const char *data, qint64 len) {
     Q_UNUSED(data);
     Q_UNUSED(len);
 
     return 0;
 }
 
-QString FalkonSchemeReply::startPage()
-{
+QString FalkonSchemeReply::startPage() {
     static QString sPage;
 
     if (!sPage.isEmpty()) {
@@ -157,10 +196,31 @@ QString FalkonSchemeReply::startPage()
     }
 
     sPage.append(QzTools::readAllFileContents(QSL(":html/start.html")));
+
+
+    // Embed the browser:e8y6 logo directly into the start page.
+    // This avoids custom-scheme restrictions on qrc: images.
+    QFile logoFile(QSL(":/browser-e8y6-logo.png"));
+
+    if (logoFile.open(QIODevice::ReadOnly)) {
+        const QByteArray logoData = logoFile.readAll();
+
+        const QString logoUrl =
+                QSL("data:image/png;base64,") +
+                QString::fromLatin1(logoData.toBase64());
+
+        sPage.replace(
+            QLatin1String("%BROWSER-LOGO%"),
+            logoUrl
+        );
+    }
+
     sPage.replace(QLatin1String("%ABOUT-IMG%"), QSL("qrc:icons/other/startpage.svg"));
     sPage.replace(QLatin1String("%ABOUT-IMG-DARK%"), QSL("qrc:icons/other/startpage-dark.svg"));
-
-    sPage.replace(QLatin1String("%TITLE%"), tr("Start Page"));
+    sPage.replace(
+        QLatin1String("%TITLE%"),
+        QSL("Start")
+    );
     sPage.replace(QLatin1String("%BUTTON-LABEL%"), tr("Search on Web"));
     sPage.replace(QLatin1String("%SEARCH-BY%"), tr("Search results provided by DuckDuckGo"));
     sPage.replace(QLatin1String("%WWW%"), QString::fromLatin1(Qz::WIKIADDRESS));
@@ -171,15 +231,41 @@ QString FalkonSchemeReply::startPage()
     return sPage;
 }
 
-QString FalkonSchemeReply::aboutPage()
-{
+QString FalkonSchemeReply::aboutPage() {
     static QString aPage;
 
     if (aPage.isEmpty()) {
         aPage.append(QzTools::readAllFileContents(QSL(":html/about.html")));
-        aPage.replace(QLatin1String("%ABOUT-IMG%"), QSL("qrc:icons/other/about.svg"));
-        aPage.replace(QLatin1String("%ABOUT-IMG-DARK%"), QSL("qrc:icons/other/about-dark.svg"));
-        aPage.replace(QLatin1String("%COPYRIGHT-INCLUDE%"), QzTools::readAllFileContents(QSL(":html/copyright")).toHtmlEscaped());
+
+        // Original Falkon logo
+        aPage.replace(
+            QLatin1String("%ABOUT-IMG%"),
+            imageResourceDataUrl(
+                QSL(":/icons/other/about-dark.svg"),
+                QSL("image/svg+xml")
+            )
+        );
+
+        aPage.replace(
+            QLatin1String("%ABOUT-IMG-DARK%"),
+            imageResourceDataUrl(
+                QSL(":/icons/other/about-dark.svg"),
+                QSL("image/svg+xml")
+            )
+        );
+
+        // browser:e8y6 logo
+        aPage.replace(
+            QLatin1String("%BROWSER-LOGO%"),
+            imageResourceDataUrl(
+                QSL(":/browser-e8y6-logo.png"),
+                QSL("image/png")
+            )
+        );
+
+
+        aPage.replace(QLatin1String("%COPYRIGHT-INCLUDE%"),
+                      QzTools::readAllFileContents(QSL(":html/copyright")).toHtmlEscaped());
 
         aPage.replace(QLatin1String("%TITLE%"), tr("About Falkon"));
         aPage.replace(QLatin1String("%ABOUT-FALKON%"), tr("About Falkon"));
@@ -189,15 +275,17 @@ QString FalkonSchemeReply::aboutPage()
         aPage.replace(QLatin1String("%VERSION-INFO%"),
                       QSL("<dt>%1</dt><dd>%2<dd>").arg(tr("Version"),
 #ifdef FALKON_GIT_REVISION
-                              QSL("%1 (%2)").arg(QString::fromLatin1(Qz::VERSION), QL1S(FALKON_GIT_REVISION))));
+                                                       QSL("%1 (%2)").arg(
+                                                           QString::fromLatin1(Qz::VERSION),
+                                                           QL1S(FALKON_GIT_REVISION))));
 #else
-                              QString::fromLatin1(Qz::VERSION)));
+                                                       QString::fromLatin1(Qz::VERSION)));
 #endif
 
         aPage.replace(QLatin1String("%MAIN-DEVELOPER%"), tr("Main developer"));
 
         QString developers = QSL("");
-        for (const auto &author : Qz::AUTHORS) {
+        for (const auto &author: Qz::AUTHORS) {
             developers += authorString(author);
         }
 
@@ -208,8 +296,7 @@ QString FalkonSchemeReply::aboutPage()
     return aPage;
 }
 
-QString FalkonSchemeReply::speeddialPage()
-{
+QString FalkonSchemeReply::speeddialPage() {
     static QString dPage;
 
     if (dPage.isEmpty()) {
@@ -252,7 +339,7 @@ QString FalkonSchemeReply::speeddialPage()
     }
 
     QString page = dPage;
-    SpeedDial* dial = mApp->plugins()->speedDial();
+    SpeedDial *dial = mApp->plugins()->speedDial();
 
     page.replace(QLatin1String("%INITIAL-SCRIPT%"), QString::fromLatin1(dial->initialScript().toUtf8().toBase64()));
     page.replace(QLatin1String("%IMG_BACKGROUND%"), dial->backgroundImage());
@@ -266,17 +353,20 @@ QString FalkonSchemeReply::speeddialPage()
     return page;
 }
 
-QString FalkonSchemeReply::restorePage()
-{
+QString FalkonSchemeReply::restorePage() {
     static QString rPage;
 
     if (rPage.isEmpty()) {
         rPage.append(QzTools::readAllFileContents(QSL(":html/restore.html")));
-        rPage.replace(QLatin1String("%IMAGE%"), QzTools::pixmapToDataUrl(IconProvider::standardIcon(QStyle::SP_MessageBoxWarning).pixmap(45)).toString());
+        rPage.replace(QLatin1String("%IMAGE%"),
+                      QzTools::pixmapToDataUrl(IconProvider::standardIcon(QStyle::SP_MessageBoxWarning).pixmap(45)).
+                      toString());
         rPage.replace(QLatin1String("%TITLE%"), tr("Restore Session"));
         rPage.replace(QLatin1String("%OOPS%"), tr("Oops, Falkon crashed."));
-        rPage.replace(QLatin1String("%APOLOGIZE%"), tr("We apologize for this. Would you like to restore the last saved state?"));
-        rPage.replace(QLatin1String("%TRY-REMOVING%"), tr("Try removing one or more tabs that you think cause troubles"));
+        rPage.replace(QLatin1String("%APOLOGIZE%"),
+                      tr("We apologize for this. Would you like to restore the last saved state?"));
+        rPage.replace(QLatin1String("%TRY-REMOVING%"),
+                      tr("Try removing one or more tabs that you think cause troubles"));
         rPage.replace(QLatin1String("%START-NEW%"), tr("Or you can start completely new session"));
         rPage.replace(QLatin1String("%WINDOW%"), tr("Window"));
         rPage.replace(QLatin1String("%WINDOWS-AND-TABS%"), tr("Windows and Tabs"));
@@ -289,19 +379,45 @@ QString FalkonSchemeReply::restorePage()
     return rPage;
 }
 
-QString FalkonSchemeReply::configPage()
-{
+QString FalkonSchemeReply::configPage() {
     static QString cPage;
 
     if (cPage.isEmpty()) {
         cPage.append(QzTools::readAllFileContents(QSL(":html/config.html")));
-        cPage.replace(QLatin1String("%ABOUT-IMG%"), QSL("qrc:icons/other/about.svg"));
-        cPage.replace(QLatin1String("%ABOUT-IMG-DARK%"), QSL("qrc:icons/other/about-dark.svg"));
+
+        // Original Falkon logo
+        cPage.replace(
+            QLatin1String("%ABOUT-IMG%"),
+            imageResourceDataUrl(
+                QSL(":/icons/other/about-dark.svg"),
+                QSL("image/svg+xml")
+            )
+        );
+
+        cPage.replace(
+            QLatin1String("%ABOUT-IMG-DARK%"),
+            imageResourceDataUrl(
+                QSL(":/icons/other/about-dark.svg"),
+                QSL("image/svg+xml")
+            )
+        );
+
+        // browser:e8y6 logo
+        cPage.replace(
+            QLatin1String("%BROWSER-LOGO%"),
+            imageResourceDataUrl(
+                QSL(":/browser-e8y6-logo.png"),
+                QSL("image/png")
+            )
+        );
+
 
         cPage.replace(QLatin1String("%TITLE%"), tr("Configuration Information"));
         cPage.replace(QLatin1String("%CONFIG%"), tr("Configuration Information"));
         cPage.replace(QLatin1String("%INFORMATIONS-ABOUT-VERSION%"), tr("Information about version"));
-        cPage.replace(QLatin1String("%CONFIG-ABOUT%"), tr("This page contains information about Falkon's current configuration - relevant for troubleshooting. Please include this information when submitting bug reports."));
+        cPage.replace(QLatin1String("%CONFIG-ABOUT%"),
+                      tr(
+                          "This page contains information about Falkon's current configuration - relevant for troubleshooting. Please include this information when submitting bug reports."));
         cPage.replace(QLatin1String("%BROWSER-IDENTIFICATION%"), tr("Browser Identification"));
         cPage.replace(QLatin1String("%PATHS%"), tr("Paths"));
         cPage.replace(QLatin1String("%BUILD-CONFIG%"), tr("Build Configuration"));
@@ -317,7 +433,7 @@ QString FalkonSchemeReply::configPage()
         auto allPaths = [](DataPaths::Path type) {
             QString out;
             const auto paths = DataPaths::allPaths(type);
-            for (const QString &path : paths) {
+            for (const QString &path: paths) {
                 if (!out.isEmpty()) {
                     out.append(QSL("<br>"));
                 }
@@ -329,18 +445,20 @@ QString FalkonSchemeReply::configPage()
         cPage.replace(QLatin1String("%VERSION-INFO%"),
                       QSL("<dt>%1</dt><dd>%2<dd>").arg(tr("Application version"),
 #ifdef FALKON_GIT_REVISION
-                              QSL("%1 (%2)").arg(QString::fromLatin1(Qz::VERSION), QL1S(FALKON_GIT_REVISION))
+                                                       QSL("%1 (%2)").arg(
+                                                           QString::fromLatin1(Qz::VERSION), QL1S(FALKON_GIT_REVISION))
 #else
-                              QString::fromLatin1(Qz::VERSION)
+                                                       QString::fromLatin1(Qz::VERSION)
 #endif
-                                                          ) +
+                      ) +
                       QSL("<dt>%1</dt><dd>%2<dd>").arg(tr("Qt version"), QString::fromLatin1(qVersion())) +
                       QSL("<dt>%1</dt><dd>%2<dd>").arg(tr("QtWebEngine version"), QSL(QTWEBENGINECORE_VERSION_STR)) +
                       QSL("<dt>%1</dt><dd>%2<dd>").arg(tr("Platform"), QzTools::operatingSystemLong()));
 
         cPage.replace(QLatin1String("%PATHS-TEXT%"),
                       QSL("<dt>%1</dt><dd>%2<dd>").arg(tr("Profile"), DataPaths::currentProfilePath()) +
-                      QSL("<dt>%1</dt><dd>%2<dd>").arg(tr("Settings"), DataPaths::currentProfilePath() + QSL("/settings.ini")) +
+                      QSL("<dt>%1</dt><dd>%2<dd>").arg(tr("Settings"),
+                                                       DataPaths::currentProfilePath() + QSL("/settings.ini")) +
                       QSL("<dt>%1</dt><dd>%2<dd>").arg(tr("Saved session"), SessionManager::defaultSessionPath()) +
                       QSL("<dt>%1</dt><dd>%2<dd>").arg(tr("Data"), allPaths(DataPaths::AppData)) +
                       QSL("<dt>%1</dt><dd>%2<dd>").arg(tr("Themes"), allPaths(DataPaths::Themes)) +
@@ -378,47 +496,48 @@ QString FalkonSchemeReply::configPage()
     QString pluginsString;
     const QList<Plugins::Plugin> &availablePlugins = mApp->plugins()->availablePlugins();
 
-    for (const Plugins::Plugin &plugin : availablePlugins) {
+    for (const Plugins::Plugin &plugin: availablePlugins) {
         PluginSpec spec = plugin.pluginSpec;
         pluginsString.append(QSL("<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>").arg(
-                                 spec.name, spec.version, spec.author.toHtmlEscaped(), spec.description));
+            spec.name, spec.version, spec.author.toHtmlEscaped(), spec.description));
     }
 
     if (pluginsString.isEmpty()) {
-        pluginsString = QSL("<tr><td colspan=4 class=\"no-available-plugins\">%1</td></tr>").arg(tr("No available extensions."));
+        pluginsString = QSL("<tr><td colspan=4 class=\"no-available-plugins\">%1</td></tr>").arg(
+            tr("No available extensions."));
     }
 
     page.replace(QLatin1String("%PLUGINS-INFO%"), pluginsString);
 
     QString allGroupsString;
-    QSettings* settings = Settings::globalSettings();
+    QSettings *settings = Settings::globalSettings();
     const auto groups = settings->childGroups();
-    for (const QString &group : groups) {
+    for (const QString &group: groups) {
         QString groupString = QSL("<tr><th colspan=\"2\">[%1]</th></tr>").arg(group);
         settings->beginGroup(group);
 
         const auto keys = settings->childKeys();
-        for (const QString &key : keys) {
+        for (const QString &key: keys) {
             const QVariant keyValue = settings->value(key);
             QString keyString;
 
             switch (keyValue.typeId()) {
-            case QMetaType::QByteArray:
-                keyString = QLatin1String("QByteArray");
-                break;
+                case QMetaType::QByteArray:
+                    keyString = QLatin1String("QByteArray");
+                    break;
 
-            case QMetaType::QPoint: {
-                const QPoint point = keyValue.toPoint();
-                keyString = QSL("QPoint(%1, %2)").arg(point.x()).arg(point.y());
-                break;
-            }
+                case QMetaType::QPoint: {
+                    const QPoint point = keyValue.toPoint();
+                    keyString = QSL("QPoint(%1, %2)").arg(point.x()).arg(point.y());
+                    break;
+                }
 
-            case QMetaType::QStringList:
-                keyString = keyValue.toStringList().join(QSL(","));
-                break;
+                case QMetaType::QStringList:
+                    keyString = keyValue.toStringList().join(QSL(","));
+                    break;
 
-            default:
-                keyString = keyValue.toString();
+                default:
+                    keyString = keyValue.toString();
             }
 
             if (keyString.isEmpty()) {

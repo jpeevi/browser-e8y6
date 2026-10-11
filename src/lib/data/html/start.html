@@ -1,48 +1,169 @@
-<html><head>
-<meta http-equiv="content-type" content="text/html; charset=utf-8">
-<title>%TITLE%</title>
-<style>
-html {font-family: sans-serif;}
-#box {max-width: 500px;min-width:450px;margin: 25px auto 0px auto;padding: 15px 40px 15px 40px;direction: %DIRECTION%;}
-h1 {font-size: 160%;margin-top: 0px;}
-.line {width: 400px;height: 25px;text-align: center;border: 1px solid;}
-.submit {margin-top: 5px;}
-a {text-decoration: none;font-weight: bold;}
-.bottom {margin-top: 20px;margin-bottom: 3px;}
-img {margin-bottom:15px;}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <title>%TITLE%</title>
 
-@media (prefers-color-scheme: light) {
-  html {background: #dddddd;color: #525c66;}
-  #box {background: #ffffff;}
-  h1, a {color: #1a4ba4;}
-  .line {border-color: #babcb8;}
-  .line:focus {border-color: #579eea;}
-  .dark {display: none;}
-}
-@media (prefers-color-scheme: dark) {
-  html {background: #070709;color: #dddddd;}
-  #box {background: #171717;}
-  h1, a {color: #0078d7;}
-  .line {background-color: #070709;color: white;border-color: #555;}
-  .line:focus {border-color: #1a4ba4;}
-  .light {display: none;}
-}
-</style>
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: "DejaVu Sans Mono", monospace;
+            background: #303030;
+            color: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        main {
+            width: 100%;
+            max-width: 540px;
+            margin-top: -6vh;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0 0 36px;
+            font-size: clamp(48px, 10vw, 76px);
+            font-weight: 600;
+            letter-spacing: -4px;
+            line-height: 1.2;
+        }
+
+        .private {
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: #dddddd;
+        }
+
+        .search {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #606060;
+            border-radius: 12px;
+            background: #404040;
+        }
+
+        .search:focus-within {
+            border-color: #999999;
+        }
+
+        .search input {
+            flex: 1;
+            min-width: 0;
+            padding: 11px 12px;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: #ffffff;
+            font: inherit;
+            font-size: 14px;
+        }
+
+        .search input::placeholder {
+            color: #aaaaaa;
+        }
+
+        .search button {
+            padding: 11px 16px;
+            border: none;
+            border-radius: 8px;
+            background: #606060;
+            color: white;
+            font: inherit;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .search button:hover {
+            background: #737373;
+        }
+
+        .footer {
+            margin-top: 34px;
+            color: #aaaaaa;
+            font-size: 12px;
+        }
+
+        @media (max-width: 480px) {
+            main {
+                margin-top: 0;
+            }
+
+            h1 {
+                margin-bottom: 28px;
+            }
+
+            .search button {
+                padding: 11px;
+            }
+        }
+
+
+        .brand-logo {
+            display: block;
+            width: 128px;
+            height: 128px;
+            object-fit: contain;
+            margin: 0 auto 36px;
+        }
+
+    </style>
 </head>
-<body onload="document.getElementById('inp').focus()">
-  <div id="box">
-<center>
 
-<img class="light" src="%ABOUT-IMG%" width="250">
-<img class="dark" src="%ABOUT-IMG-DARK%" width="250">
-%PRIVATE-BROWSING%
-<form action="https://duckduckgo.com/" method="GET">
-    <input type="hidden" name="t" value="qupzilla" />
-    <input class="line" id="inp" class="question" name="q"/> <br/>
-    <input class="submit" type="submit" value="%BUTTON-LABEL%">
-</form>
+<body>
+<main>
 
-<p class="bottom">%SEARCH-BY% | <a href="%WWW%">%ABOUT-FALKON%</a></p>
-</center>
-  </div>
-</body></html>
+    <img
+            alt="browser:e8y6"
+            class="brand-logo"
+            height="128"
+            src="%BROWSER-LOGO%"
+            width="128"
+    >
+
+
+    <div class="private">%PRIVATE-BROWSING%</div>
+
+    <!-- Temporary search until native integration is added -->
+    <form
+            action="https://duckduckgo.com/"
+            class="search"
+            method="GET"
+    >
+        <input
+                aria-label="Search the web"
+                autocomplete="off"
+                autofocus
+                id="search-input"
+                name="q"
+                placeholder="Search the web"
+                required
+                type="search"
+        >
+
+        <button type="submit">
+            Search
+        </button>
+    </form>
+
+    <div class="footer">
+        browser:e8y6
+    </div>
+</main>
+</body>
+</html>

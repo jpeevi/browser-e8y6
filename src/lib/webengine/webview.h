@@ -171,10 +171,6 @@ protected:
     void createSearchEngine();
 
 private Q_SLOTS:
-    void addSpeedDial();
-    void configureSpeedDial();
-    void reloadAllSpeedDials();
-
     void toggleMediaPause();
     void toggleMediaMute();
 
