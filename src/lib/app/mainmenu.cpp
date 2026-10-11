@@ -469,7 +469,7 @@ void MainMenu::init()
     m_actions[QSL(name)] = action
 
     // Standard actions - needed on Mac to be placed correctly in "application" menu
-    auto* action = new QAction(QIcon::fromTheme(QSL("help-about")), tr("&About Falkon"), this);
+    auto* action = new QAction(QIcon::fromTheme(QSL("help-about")), tr("&About browser:e8y6"), this);
     action->setMenuRole(QAction::AboutRole);
     connect(action, &QAction::triggered, this, &MainMenu::showAboutDialog);
     m_actions[QSL("Standard/About")] = action;

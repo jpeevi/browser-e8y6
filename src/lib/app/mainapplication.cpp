@@ -121,13 +121,14 @@ MainApplication::MainApplication(int &argc, char** argv)
 {
     setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
 
-    setApplicationName(QStringLiteral("falkon"));
+    setApplicationDisplayName(QStringLiteral("browser:e8y6"));
     setOrganizationDomain(QStringLiteral("org.kde"));
 #if defined(Q_OS_WIN)
     QIcon::setFallbackThemeName(QStringLiteral("breeze"));
     setStyle(QStringLiteral("breeze"));
 #endif
-    setWindowIcon(QIcon::fromTheme(QSL("falkon"), QIcon(QSL(":icons/falkon.svg"))));
+    const QString iconPath = QDir(applicationDirPath()).absoluteFilePath(QSL("../share/icons/hicolor/256x256/apps/browser-e8y6.png"));
+    setWindowIcon(QIcon::fromTheme(QSL("browser-e8y6"), QIcon(iconPath)));
     setDesktopFileName(QSL("org.kde.falkon"));
 
 #ifdef GIT_REVISION

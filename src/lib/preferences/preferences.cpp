@@ -111,6 +111,10 @@ Preferences::Preferences(BrowserWindow* window)
     QzTools::centerWidgetOnScreen(this);
 
     m_themesManager = new ThemeManager(ui->themesWidget, this);
+    // browser:e8y6: Linux-only appearance.
+    ui->tabWidget_2->removeTab(
+        ui->tabWidget_2->indexOf(ui->tab_5)
+    );
     m_pluginsList = new PluginsManager(this);
     ui->pluginsFrame->addWidget(m_pluginsList);
 

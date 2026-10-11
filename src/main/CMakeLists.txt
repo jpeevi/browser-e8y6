@@ -12,6 +12,12 @@ if (WIN32)
 endif()
 ecm_create_qm_loader(SRCS falkon_qt)
 add_executable(falkon ${SRCS})
+# browser:e8y6 - Linux executable branding
+if(UNIX AND NOT APPLE)
+    set_target_properties(falkon PROPERTIES
+            OUTPUT_NAME "browser:e8y6"
+    )
+endif()
 
 target_link_libraries(falkon FalkonPrivate)
 

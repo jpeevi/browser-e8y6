@@ -218,10 +218,10 @@ BrowserWindow::BrowserWindow(Qz::BrowserWindowType type, const QList<QUrl> start
     QTimer::singleShot(0, this, &BrowserWindow::postLaunch);
 
     if (mApp->isPrivate()) {
-        QzTools::setWmClass(QSL("Falkon Browser (Private Window)"), this);
+        QzTools::setWmClass(QSL("browser:e8y6 (Private Window)"), this);
     }
     else {
-        QzTools::setWmClass(QSL("Falkon Browser"), this);
+        QzTools::setWmClass(QSL("browser:e8y6"), this);
     }
 }
 
@@ -1011,9 +1011,9 @@ void BrowserWindow::currentTabChanged()
 
     const QString title = view->webTab()->title(/*allowEmpty*/true);
     if (title.isEmpty()) {
-        setWindowTitle(tr("Falkon"));
+        setWindowTitle(tr("browser:e8y6"));
     } else {
-        setWindowTitle(tr("%1 - Falkon").arg(title));
+        setWindowTitle(tr("%1 - browser:e8y6").arg(title));
     }
     m_ipLabel->setText(view->getIp());
     view->setFocus();

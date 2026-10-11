@@ -214,3 +214,14 @@ endif()
 # SKIP_PO_INSTALL
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
+
+# browser:e8y6 application icons
+
+foreach(ICON_SIZE 16 24 32 48 64 128 256 512)
+    install(
+        FILES
+            "${CMAKE_CURRENT_SOURCE_DIR}/branding/hicolor/${ICON_SIZE}x${ICON_SIZE}/apps/browser-e8y6.png"
+        DESTINATION
+            "share/icons/hicolor/${ICON_SIZE}x${ICON_SIZE}/apps"
+    )
+endforeach()

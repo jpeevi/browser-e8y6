@@ -9,6 +9,7 @@ DEBIAN
 headers*.tar.gz
 license_template
 bin/falkon
+bin/browser:e8y6
 bin/Falkon.dmg
 mac/images/falkon-dmg-icon.iconset
 lib*.so*
@@ -41,3 +42,7 @@ bin/profiles
 CMakeLists.txt.user*
 **/symbology-style.db
 **/user-history.db
+
+# browser:e8y6 local development
+.idea/
+local-install/

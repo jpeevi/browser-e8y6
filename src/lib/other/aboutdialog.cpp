@@ -1,3 +1,4 @@
+
 /* ============================================================
 * Falkon - Qt web browser
 * Copyright (C) 2010-2018 David Rosca <nowrep@gmail.com>
@@ -10,12 +11,13 @@
 *
 * This program is distributed in the hope that it will be useful,
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://www.gnu.org/licenses/>.
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
 * ============================================================ */
+
 #include "aboutdialog.h"
 #include "ui_aboutdialog.h"
 #include "browserwindow.h"
@@ -24,6 +26,7 @@
 #include "useragentmanager.h"
 #include "../config.h"
 
+#include <QFont>
 #include <QWebEnginePage>
 #include <QWebEngineProfile>
 #include <QtWebEngineCoreVersion>
@@ -35,7 +38,23 @@ AboutDialog::AboutDialog(QWidget* parent)
     setAttribute(Qt::WA_DeleteOnClose);
 
     ui->setupUi(this);
-    ui->label->setPixmap(QIcon(QSL(":icons/other/about.svg")).pixmap(QSize(256, 100) * 1.1));
+
+    // browser:e8y6 - application branding
+    setWindowTitle(QStringLiteral("About browser:e8y6"));
+
+    // Replace Falkon's graphical logo with text-only branding.
+    ui->label->setPixmap(QPixmap());
+    ui->label->setText(QStringLiteral("browser:e8y6"));
+    ui->label->setAlignment(Qt::AlignCenter);
+
+    QFont brandingFont = ui->label->font();
+    brandingFont.setPointSize(26);
+    brandingFont.setBold(true);
+    ui->label->setFont(brandingFont);
+
+    // Keep the branding readable across Qt themes.
+    ui->label->setMinimumWidth(300);
+    ui->label->setMinimumHeight(75);
 
     showAbout();
 }
@@ -49,15 +68,24 @@ void AboutDialog::showAbout()
 {
     QString aboutHtml;
     aboutHtml += QSL("<div style='margin:0px 20px;'>");
+
+    // Application version
     aboutHtml += tr("<p><b>Application version %1</b><br/>").arg(
 #ifdef FALKON_GIT_REVISION
-                       QString(QSL("%1 (%2)")).arg(QString::fromLatin1(Qz::VERSION), QL1S(FALKON_GIT_REVISION))
+                       QString(QSL("%1 (%2)")).arg(
+                           QString::fromLatin1(Qz::VERSION),
+                           QL1S(FALKON_GIT_REVISION)
+                       )
 #else
                        QString::fromLatin1(Qz::VERSION)
 #endif
                    );
-    aboutHtml += tr("<b>QtWebEngine version %1</b></p>").arg(QStringLiteral(QTWEBENGINECORE_VERSION_STR));
 
+    // QtWebEngine version
+    aboutHtml += tr("<b>QtWebEngine version %1</b></p>")
+                     .arg(QStringLiteral(QTWEBENGINECORE_VERSION_STR));
+
+    // Preserve original Falkon contributor credits.
     aboutHtml += QSL("<p>");
 
     for (const auto &author : Qz::AUTHORS) {
@@ -68,9 +96,18 @@ void AboutDialog::showAbout()
         );
     }
 
-    aboutHtml += QStringLiteral("<a href=%1>%1</a></p>").arg(QString::fromLatin1(Qz::WWWADDRESS));
-    aboutHtml += QStringLiteral("<p>") + mApp->userAgentManager()->defaultUserAgent() + QStringLiteral("</p>");
+    // Preserve upstream project attribution.
+    aboutHtml += QStringLiteral("<a href=%1>%1</a></p>")
+                     .arg(QString::fromLatin1(Qz::WWWADDRESS));
+
+    // Preserve browser user-agent information.
+    aboutHtml += QStringLiteral("<p>")
+                     + mApp->userAgentManager()->defaultUserAgent()
+                     + QStringLiteral("</p>");
+
     aboutHtml += QStringLiteral("</div>");
+
     ui->textLabel->setText(aboutHtml);
+
     setFixedHeight(sizeHint().height());
 }

@@ -158,7 +158,7 @@ void TabWidget::loadSettings()
 {
     Settings settings;
     settings.beginGroup(QSL("Browser-Tabs-Settings"));
-    m_dontCloseWithOneTab = settings.value(QSL("dontCloseWithOneTab"), false).toBool();
+    m_dontCloseWithOneTab = true;
     m_showClosedTabsButton = settings.value(QSL("showClosedTabsButton"), false).toBool();
     m_newTabAfterActive = settings.value(QSL("newTabAfterActive"), true).toBool();
     m_newEmptyTabAfterActive = settings.value(QSL("newEmptyTabAfterActive"), false).toBool();
