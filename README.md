@@ -1,46 +1,46 @@
-# Falkon
+# browser:e8y6
 
-Falkon is a KDE web browser. It uses QtWebEngine rendering engine.
+A web browser developed for **[os:e8y6](https://github.com/jpeevi/os-e8y6)**.
 
-![image](https://www.falkon.org/images/screenshot.png)
 
-## Downloads
+## Features
 
-Falkon downloads are available from [homepage](https://www.falkon.org/download/).
+- Minimal, dark-themed interface
+- Custom Start, About, and Configuration pages
+- Simplified navigation and tab management
+- Lightweight build configuration
+- Dedicated browser profile with persistent data
+- Compatibility with existing Falkon internal URLs
 
-## Building
+## Technology
 
-```sh
-mkdir build && cd build
-cmake ..
-make && make install
+- **Foundation:** KDE Falkon
+- **Browser engine:** Qt WebEngine (Chromium-based)
+- **Framework:** Qt 6 / KDE Frameworks 6
+- **Platform:** Linux
+
+## Build Prerequisites
+
+Requires Linux (Ubuntu/Xubuntu recommended), a C++17 compiler, CMake, Ninja, Qt 6 with WebEngine, KDE Frameworks 6, and the required development libraries.
+
+Optional integrations may require additional dependencies. A reduced-dependency Lite mode is supported.
+
+## Development
+
+Build and launch locally:
+
+```bash
+./dev.sh
 ```
 
-### Install to custom prefix
+Development profile: `browser-e8y6-dev`
 
-When installing Falkon to custom prefix, you may need to adjust `XDG_DATA_DIRS` environment variable.
+## Updates
 
-```sh
-# Build
-cmake -DCMAKE_INSTALL_PREFIX=$HOME/falkon
+- **os:e8y6** manages Qt WebEngine and its security updates.
+- **browser:e8y6** manages browser features, interface, and Falkon integration.
+- Upstream Falkon changes are reviewed and integrated selectively.
 
-# Run
-export XDG_DATA_DIRS="$HOME/falkon/share:$XDG_DATA_DIRS"
-$HOME/falkon/bin/falkon
-```
+## License
 
-## Contributing
-
-Want to contribute? Great!
-
-[KDE Community Wiki](https://community.kde.org/Get_Involved)
-
-Code review is done on [Phabricator](https://community.kde.org/Infrastructure/Phabricator). When sending patches, add Falkon project (`#Falkon`) as a reviewer.
-
-#### Reporting bugs
-
-You can report any bugs or feature request in KDE [bugzilla](https://bugs.kde.org/enter_bug.cgi?product=Falkon). Before reporting, please make sure your issue isn’t already reported ([open issues](https://bugs.kde.org/buglist.cgi?bug_status=UNCONFIRMED&bug_status=CONFIRMED&bug_status=ASSIGNED&bug_status=REOPENED&component=extensions&component=general&list_id=1597725&product=Falkon)).
-
-#### Contact
-
-You can get in contact with developers using [mailing list](https://mail.kde.org/mailman/listinfo/falkon) or __IRC__ `#falkon` at `irc.libera.chat`.
+Based on [KDE Falkon](https://www.falkon.org/). Original Falkon copyright notices and applicable open-source licenses are retained.
