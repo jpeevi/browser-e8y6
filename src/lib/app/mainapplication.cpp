@@ -255,7 +255,7 @@ MainApplication::MainApplication(int &argc, char **argv)
 
     // Don't start single application in private browsing
     if (!isPrivate()) {
-        QString appId = QStringLiteral("org.kde.Falkon");
+        QString appId = QStringLiteral("org.e8y6.browser");
 
         if (isPortable()) {
             appId.append(QLatin1String(".Portable"));
