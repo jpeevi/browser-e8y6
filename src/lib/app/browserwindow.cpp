@@ -574,7 +574,14 @@ void BrowserWindow::loadSettings() {
 
     //Url settings
     settings.beginGroup(QSL("Web-URL-Settings"));
-    m_homepage = settings.value(QSL("homepage"), QSL("falkon:start")).toUrl();
+    m_homepage = settings.value(QSL("homepage"), QSL("browser-e8y6:start")).toUrl();
+
+    // Migrate the legacy Falkon homepage without changing custom URLs.
+    if (m_homepage == QUrl(QSL("falkon:start"))) {
+        m_homepage = QUrl(QSL("browser-e8y6:start"));
+        settings.setValue(QSL("homepage"), m_homepage);
+    }
+
     settings.endGroup();
 
     //Browser Window settings

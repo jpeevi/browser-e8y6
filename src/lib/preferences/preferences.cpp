@@ -144,7 +144,7 @@ Preferences::Preferences(BrowserWindow* window)
     Settings settings;
     //GENERAL URLs
     settings.beginGroup(QSL("Web-URL-Settings"));
-    m_homepage = settings.value(QSL("homepage"), QUrl(QSL("falkon:start"))).toUrl();
+    m_homepage = settings.value(QSL("homepage"), QUrl(QSL("browser-e8y6:start"))).toUrl();
     m_newTabUrl = settings.value(QSL("newTabUrl"), QUrl(QSL("falkon:speeddial"))).toUrl();
     ui->homepage->setText(QString::fromUtf8(m_homepage.toEncoded()));
     ui->newTabUrl->setText(QString::fromUtf8(m_newTabUrl.toEncoded()));
