@@ -17,7 +17,15 @@ if [[ ! "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     exit 1
 fi
 
-PACKAGE_VERSION="${APP_VERSION}-1"
+# Debian packaging revision, independent of application version.
+DEB_REVISION="$(cat "$PROJECT_DIR/DEB_REVISION" 2>/dev/null || echo 1)"
+
+if [[ ! "$DEB_REVISION" =~ ^[1-9][0-9]*$ ]]; then
+    echo "ERROR: Invalid DEB_REVISION: $DEB_REVISION" >&2
+    exit 1
+fi
+
+PACKAGE_VERSION="${APP_VERSION}-${DEB_REVISION}"
 CURRENT_PACKAGE_VERSION="$(dpkg-parsechangelog -S Version)"
 
 if [[ "$CURRENT_PACKAGE_VERSION" != "$PACKAGE_VERSION" ]]; then
