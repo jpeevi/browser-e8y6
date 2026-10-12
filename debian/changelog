@@ -1,4 +1,4 @@
-browser-e8y6 (0.1.0-1) noble; urgency=medium
+browser-e8y6 (0.1.2-1) noble; urgency=medium
 
   * Initial Debian package release of browser:e8y6.
   * Based on KDE Falkon with custom browser:e8y6 branding.
