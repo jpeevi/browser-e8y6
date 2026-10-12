@@ -2,11 +2,13 @@
 cmake_minimum_required(VERSION 3.18)
 
 
-# browser:e8y6 version
-set(RELEASE_SERVICE_VERSION_MAJOR "0")
-set(RELEASE_SERVICE_VERSION_MINOR "1")
-set(RELEASE_SERVICE_VERSION_MICRO "2")
-set(RELEASE_SERVICE_VERSION "${RELEASE_SERVICE_VERSION_MAJOR}.${RELEASE_SERVICE_VERSION_MINOR}.${RELEASE_SERVICE_VERSION_MICRO}")
+# browser:e8y6 version — single source of truth.
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION"
+     RELEASE_SERVICE_VERSION LIMIT_COUNT 1)
+
+if(NOT RELEASE_SERVICE_VERSION MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+$")
+    message(FATAL_ERROR "Invalid browser:e8y6 VERSION file")
+endif()
 
 # Keep the internal CMake project name for Falkon compatibility.
 project(Falkon VERSION ${RELEASE_SERVICE_VERSION})
