@@ -60,7 +60,7 @@ AddTabButton::AddTabButton(TabWidget *tabWidget, TabBar *tabBar)
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    QPen pen(QColor("#E8E8E8"));
+    QPen pen(tabBar->palette().color(QPalette::WindowText));
     pen.setWidth(3);
     pen.setCapStyle(Qt::RoundCap);
 

@@ -40,6 +40,7 @@
 #include <QWebEngineHistory>
 #include <QMouseEvent>
 #include <QStyleOption>
+#include <QPainter>
 
 static QString titleForUrl(QString title, const QUrl &url)
 {
@@ -178,12 +179,23 @@ NavigationBar::NavigationBar(BrowserWindow* window)
     m_supMenu = new ToolButton(this);
     m_supMenu->setObjectName("navigation-button-supermenu");
 
-    m_supMenu->setFallbackIcon(
-        QIcon::fromTheme(
-            QSL("application-menu"),
-            style()->standardIcon(QStyle::SP_TitleBarMenuButton)
-        )
-    );
+    // browser:e8y6 - consistent hamburger menu icon.
+    QPixmap menuPixmap(24, 24);
+    menuPixmap.fill(Qt::transparent);
+
+    QPainter menuPainter(&menuPixmap);
+    menuPainter.setRenderHint(QPainter::Antialiasing);
+
+    QPen menuPen(palette().color(QPalette::WindowText));
+    menuPen.setWidth(2);
+    menuPen.setCapStyle(Qt::RoundCap);
+    menuPainter.setPen(menuPen);
+
+    for (int y : {6, 12, 18})
+        menuPainter.drawLine(5, y, 19, y);
+
+    menuPainter.end();
+    m_supMenu->setIcon(QIcon(menuPixmap));
 
     m_supMenu->setPopupMode(QToolButton::InstantPopup);
     m_supMenu->setToolbarButtonLook(true);
