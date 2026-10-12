@@ -258,8 +258,8 @@ QString FalkonSchemeReply::aboutPage() {
         aPage.replace(
             QLatin1String("%BROWSER-LOGO%"),
             imageResourceDataUrl(
-                QSL(":/browser-e8y6-logo.png"),
-                QSL("image/png")
+                QSL(":/browser-e8y6-home.svg"),
+                QSL("image/svg+xml")
             )
         );
 
@@ -408,8 +408,8 @@ QString FalkonSchemeReply::configPage() {
         cPage.replace(
             QLatin1String("%BROWSER-LOGO%"),
             imageResourceDataUrl(
-                QSL(":/browser-e8y6-logo.png"),
-                QSL("image/png")
+                QSL(":/browser-e8y6-home.svg"),
+                QSL("image/svg+xml")
             )
         );
 
