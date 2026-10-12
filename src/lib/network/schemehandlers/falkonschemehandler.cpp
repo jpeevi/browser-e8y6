@@ -200,13 +200,13 @@ QString FalkonSchemeReply::startPage() {
 
     // Embed the browser:e8y6 logo directly into the start page.
     // This avoids custom-scheme restrictions on qrc: images.
-    QFile logoFile(QSL(":/browser-e8y6-logo.png"));
+    QFile logoFile(QSL(":/browser-e8y6-home.svg"));
 
     if (logoFile.open(QIODevice::ReadOnly)) {
         const QByteArray logoData = logoFile.readAll();
 
         const QString logoUrl =
-                QSL("data:image/png;base64,") +
+                QSL("data:image/svg+xml;base64,") +
                 QString::fromLatin1(logoData.toBase64());
 
         sPage.replace(

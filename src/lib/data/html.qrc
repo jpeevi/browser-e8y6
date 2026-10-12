@@ -24,5 +24,6 @@
         <file>html/sd_dark_bg.svg</file>
         <file>html/broken-page.svg</file>
         <file alias="browser-e8y6-logo.png">../../../branding/browser-e8y6.png</file>
+        <file alias="browser-e8y6-home.svg">../../../branding/browser-e8y6-home.svg</file>
     </qresource>
 </RCC>

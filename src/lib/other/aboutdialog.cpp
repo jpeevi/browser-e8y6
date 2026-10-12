@@ -85,6 +85,17 @@ void AboutDialog::showAbout()
     aboutHtml += tr("<b>QtWebEngine version %1</b></p>")
                      .arg(QStringLiteral(QTWEBENGINECORE_VERSION_STR));
 
+    // browser:e8y6 project description and attribution.
+    aboutHtml += QSL("<p>A lightweight, customizable web browser "
+                     "based on KDE Falkon, with custom branding "
+                     "and integration for os:e8y6.</p>");
+
+    aboutHtml += QSL("<p>Developed by jpeevi<br/>"
+                     "<a href='mailto:jpeevi@hotmail.com'>"
+                     "jpeevi@hotmail.com</a></p>");
+
+    aboutHtml += QSL("<p><b>Based on KDE Falkon</b></p>");
+
     // Preserve original Falkon contributor credits.
     aboutHtml += QSL("<p>");
 
