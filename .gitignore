@@ -46,3 +46,11 @@ CMakeLists.txt.user*
 # browser:e8y6 local development
 .idea/
 local-install/
+
+# Debian build artifacts
+debian/.debhelper/
+debian/browser-e8y6/
+debian/*.substvars
+debian/debhelper-build-stamp
+debian/files
+build-logs/
