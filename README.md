@@ -41,6 +41,24 @@ Development profile: `browser-e8y6-dev`
 - **browser:e8y6** manages browser features, interface, and Falkon integration.
 - Upstream Falkon changes are reviewed and integrated selectively.
 
+## Configuration
+
+Open the browser configuration page by entering the following address in browser:e8y6:
+
+```text
+e8y6:config
+```
+
+Other internal pages:
+
+| Address | Description |
+|---|---|
+| `e8y6:start` | Browser start page |
+| `e8y6:about` | Browser information |
+| `e8y6:config` | Browser configuration |
+
+Legacy Falkon internal URLs remain supported for compatibility.
+
 ## License
 
 Based on [KDE Falkon](https://www.falkon.org/). Original Falkon copyright notices and applicable open-source licenses are retained.
