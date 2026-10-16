@@ -91,9 +91,17 @@ bool FalkonSchemeHandler::handleRequest(QWebEngineUrlRequestJob *job) {
     QUrlQuery query(requestUrl);
 
 
+
+    // Canonicalize legacy Start URLs without removing compatibility.
+    if (requestUrl.path() == QL1S("start") &&
+        requestUrl.scheme() != QL1S("e8y6")) {
+        job->redirect(QUrl(QSL("e8y6:start")));
+        return true;
+    }
+
     // browser:e8y6 - retire Speed Dial without deleting saved data.
     if (requestUrl.path() == QL1S("speeddial")) {
-        job->redirect(QUrl(QSL("browser-e8y6:start")));
+        job->redirect(QUrl(QSL("e8y6:start")));
         return true;
     }
 
@@ -112,11 +120,8 @@ bool FalkonSchemeHandler::handleRequest(QWebEngineUrlRequestJob *job) {
 
         mApp->destroyRestoreManager();
 
-        // Preserve the scheme used to open session recovery.
-        const QString homeScheme =
-                requestUrl.scheme() == QL1S("browser-e8y6")
-                    ? QSL("browser-e8y6")
-                    : QSL("falkon");
+        // Return to the primary internal scheme.
+        const QString homeScheme = QSL("e8y6");
 
         QUrl homeUrl;
         homeUrl.setScheme(homeScheme);
@@ -241,7 +246,7 @@ QString FalkonSchemeReply::aboutPage() {
         aPage.replace(
             QLatin1String("%ABOUT-IMG%"),
             imageResourceDataUrl(
-                QSL(":/icons/other/about-dark.svg"),
+                QSL(":/icons/other/about.svg"),
                 QSL("image/svg+xml")
             )
         );
@@ -391,7 +396,7 @@ QString FalkonSchemeReply::configPage() {
         cPage.replace(
             QLatin1String("%ABOUT-IMG%"),
             imageResourceDataUrl(
-                QSL(":/icons/other/about-dark.svg"),
+                QSL(":/icons/other/about.svg"),
                 QSL("image/svg+xml")
             )
         );

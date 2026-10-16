@@ -251,7 +251,7 @@ void BrowserWindow::postLaunch() {
 
         case MainApplication::OpenSpeedDial:
         case MainApplication::OpenHomePage:
-            startUrl = QUrl(QSL("browser-e8y6:start"));
+            startUrl = QUrl(QSL("e8y6:start"));
             break;
 
         case MainApplication::RestoreSession:
@@ -267,8 +267,9 @@ void BrowserWindow::postLaunch() {
 
     // Normalize the legacy start-page address.
     // Keep ordinary homepages and saved session URLs unchanged.
-    if (startUrl == QUrl(QSL("falkon:start"))) {
-        startUrl = QUrl(QSL("browser-e8y6:start"));
+    if (startUrl == QUrl(QSL("falkon:start")) ||
+        startUrl == QUrl(QSL("e8y6:start"))) {
+        startUrl = QUrl(QSL("e8y6:start"));
     }
 
 
@@ -281,7 +282,7 @@ void BrowserWindow::postLaunch() {
             if (mApp->isStartingAfterCrash()) {
                 addTab = false;
                 startUrl.clear();
-                m_tabWidget->addView(QUrl(QSL("falkon:restore")), Qz::NT_CleanSelectedTabAtTheEnd);
+                m_tabWidget->addView(QUrl(QSL("e8y6:restore")), Qz::NT_CleanSelectedTabAtTheEnd);
             } else if (mApp->afterLaunch() == MainApplication::SelectSession || mApp->afterLaunch() ==
                        MainApplication::RestoreSession) {
                 addTab = m_tabWidget->count() <= 0;
@@ -323,7 +324,7 @@ void BrowserWindow::postLaunch() {
 
 
         if (startUrl.isEmpty() ||
-            startUrl.toString() == QLatin1String("browser-e8y6:start")) {
+            startUrl.toString() == QLatin1String("e8y6:start")) {
             locationBar()->setFocus();
         }
     }
@@ -574,11 +575,12 @@ void BrowserWindow::loadSettings() {
 
     //Url settings
     settings.beginGroup(QSL("Web-URL-Settings"));
-    m_homepage = settings.value(QSL("homepage"), QSL("browser-e8y6:start")).toUrl();
+    m_homepage = settings.value(QSL("homepage"), QSL("e8y6:start")).toUrl();
 
     // Migrate the legacy Falkon homepage without changing custom URLs.
-    if (m_homepage == QUrl(QSL("falkon:start"))) {
-        m_homepage = QUrl(QSL("browser-e8y6:start"));
+    if (m_homepage == QUrl(QSL("falkon:start")) ||
+        m_homepage == QUrl(QSL("e8y6:start"))) {
+        m_homepage = QUrl(QSL("e8y6:start"));
         settings.setValue(QSL("homepage"), m_homepage);
     }
 

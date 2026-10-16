@@ -185,15 +185,16 @@ void TabWidget::loadSettings() {
 
     m_urlOnNewTab = settings.value(
         QSL("newTabUrl"),
-        QSL("browser-e8y6:start")
+        QSL("e8y6:start")
     ).toUrl();
 
     // Redirect old Speed Dial and start-page preferences
     // to the browser:e8y6 homepage.
     if (m_urlOnNewTab == QUrl(QSL("falkon:speeddial")) ||
         m_urlOnNewTab == QUrl(QSL("browser-e8y6:speeddial")) ||
-        m_urlOnNewTab == QUrl(QSL("falkon:start"))) {
-        m_urlOnNewTab = QUrl(QSL("browser-e8y6:start"));
+        m_urlOnNewTab == QUrl(QSL("falkon:start")) ||
+        m_urlOnNewTab == QUrl(QSL("e8y6:start"))) {
+        m_urlOnNewTab = QUrl(QSL("e8y6:start"));
     }
 
     settings.endGroup();

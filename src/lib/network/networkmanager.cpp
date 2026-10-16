@@ -62,12 +62,18 @@ NetworkManager::NetworkManager(QObject *parent)
     );
 
     mApp->webProfile()->installUrlSchemeHandler(
+        QByteArrayLiteral("e8y6"),
+        internalSchemeHandler
+    );
+
+    mApp->webProfile()->installUrlSchemeHandler(
         QByteArrayLiteral("extension"),
         m_extensionScheme
     );
 
     WebPage::addSupportedScheme(QSL("falkon"));
     WebPage::addSupportedScheme(QSL("browser-e8y6"));
+    WebPage::addSupportedScheme(QSL("e8y6"));
     WebPage::addSupportedScheme(QSL("extension"));
 
 
@@ -410,6 +416,14 @@ void NetworkManager::registerSchemes() {
     );
     browserScheme.setSyntax(QWebEngineUrlScheme::Syntax::Path);
     QWebEngineUrlScheme::registerScheme(browserScheme);
+
+    QWebEngineUrlScheme e8y6Scheme("e8y6");
+    e8y6Scheme.setFlags(
+        QWebEngineUrlScheme::SecureScheme |
+        QWebEngineUrlScheme::ContentSecurityPolicyIgnored
+    );
+    e8y6Scheme.setSyntax(QWebEngineUrlScheme::Syntax::Path);
+    QWebEngineUrlScheme::registerScheme(e8y6Scheme);
 
     QWebEngineUrlScheme extensionScheme("extension");
     extensionScheme.setFlags(

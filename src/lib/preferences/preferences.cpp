@@ -144,8 +144,8 @@ Preferences::Preferences(BrowserWindow* window)
     Settings settings;
     //GENERAL URLs
     settings.beginGroup(QSL("Web-URL-Settings"));
-    m_homepage = settings.value(QSL("homepage"), QUrl(QSL("browser-e8y6:start"))).toUrl();
-    m_newTabUrl = settings.value(QSL("newTabUrl"), QUrl(QSL("falkon:speeddial"))).toUrl();
+    m_homepage = settings.value(QSL("homepage"), QUrl(QSL("e8y6:start"))).toUrl();
+    m_newTabUrl = settings.value(QSL("newTabUrl"), QUrl(QSL("e8y6:start"))).toUrl();
     ui->homepage->setText(QString::fromUtf8(m_homepage.toEncoded()));
     ui->newTabUrl->setText(QString::fromUtf8(m_newTabUrl.toEncoded()));
     settings.endGroup();
@@ -193,7 +193,7 @@ Preferences::Preferences(BrowserWindow* window)
     else if (m_newTabUrl == m_homepage) {
         ui->newTab->setCurrentIndex(1);
     }
-    else if (m_newTabUrl.toString() == QL1S("falkon:speeddial")) {
+    else if (m_newTabUrl.toString() == QL1S("e8y6:start")) {
         ui->newTab->setCurrentIndex(2);
     }
     else {
@@ -970,7 +970,7 @@ void Preferences::saveSettings()
         break;
 
     case 2:
-        settings.setValue(QSL("newTabUrl"), QUrl(QSL("falkon:speeddial")));
+        settings.setValue(QSL("newTabUrl"), QUrl(QSL("e8y6:start")));
         break;
 
     case 3:

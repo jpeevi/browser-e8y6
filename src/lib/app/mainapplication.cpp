@@ -139,9 +139,8 @@ MainApplication::MainApplication(int &argc, char **argv)
     setStyle(QStringLiteral("breeze"));
 #endif
     const QString iconPath = QDir(applicationDirPath()).absoluteFilePath(
-        QSL("../share/icons/hicolor/256x256/apps/browser-e8y6.png"));
+    QSL("../share/icons/hicolor/scalable/apps/browser-e8y6.svg"));
     setWindowIcon(QIcon::fromTheme(QSL("browser-e8y6"), QIcon(iconPath)));
-    setDesktopFileName(QSL("browser-e8y6"));
 
 #ifdef GIT_REVISION
 
@@ -1144,6 +1143,34 @@ void MainApplication::loadSettings() {
 void MainApplication::loadTheme(const QString &name) {
     QString activeThemePath = DataPaths::locate(DataPaths::Themes, name);
 
+    // browser:e8y6 theme fallback.
+    if (activeThemePath.isEmpty() ||
+        !QFileInfo::exists(activeThemePath + QL1S("/main.css"))) {
+        QStringList themeRoots;
+        themeRoots << QDir(QCoreApplication::applicationDirPath())
+                .absoluteFilePath(QL1S("../share/falkon/themes"));
+
+        const QStringList xdgDirs =
+                QString::fromLocal8Bit(qgetenv("XDG_DATA_DIRS"))
+                .split(QLatin1Char(':'), Qt::SkipEmptyParts);
+
+        for (const QString &dataDir: xdgDirs) {
+            themeRoots << QDir(dataDir).absoluteFilePath(
+                QL1S("falkon/themes"));
+        }
+
+        for (const QString &themeRoot: themeRoots) {
+            const QString candidate =
+                    QDir(themeRoot).absoluteFilePath(name);
+
+            if (QFileInfo::exists(candidate + QL1S("/main.css"))) {
+                activeThemePath = candidate;
+                break;
+            }
+        }
+    }
+
+
     // browser:e8y6 - locate themes in the browser's own installation
     // when standard theme discovery fails.
     if (activeThemePath.isEmpty()) {
@@ -1189,10 +1216,10 @@ void MainApplication::loadTheme(const QString &name) {
         );
 
         const QString defaultThemePath =
-            executableDir.absoluteFilePath(
-                QSL("../share/browser-e8y6/themes/") +
-                DEFAULT_THEME_NAME
-            );
+                executableDir.absoluteFilePath(
+                    QSL("../share/browser-e8y6/themes/") +
+                    DEFAULT_THEME_NAME
+                );
 
         if (QFileInfo(
             QDir(defaultThemePath).filePath(QSL("main.css"))

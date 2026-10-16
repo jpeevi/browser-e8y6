@@ -105,7 +105,7 @@ QObject *ExternalJsObject::recovery() const {
 
     const bool isRecoveryPage =
             currentUrl == QUrl(QSL("falkon:restore")) ||
-            currentUrl == QUrl(QSL("browser-e8y6:restore"));
+            currentUrl == QUrl(QSL("e8y6:restore"));
 
     if (!isRecoveryPage) {
         return nullptr;
